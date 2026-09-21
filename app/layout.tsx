@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://temporary-flying-peridot-58s2mnn.vercel.app"),
+  metadataBase: new URL("https://nova-store-tmp.vercel.app"),
   alternates: {
     canonical: "/",
     languages: {

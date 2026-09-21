@@ -3,12 +3,12 @@ export default function JsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Nova Store",
-    url: "https://temporary-flying-peridot-58s2mnn.vercel.app",
+    url: "https://nova-store-tmp.vercel.app",
     description: "Nova Store is your one-stop online shop for quality products. Shop the latest trends with fast shipping and secure payments.",
     inLanguage: ["en-US", "ar-EG"],
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://temporary-flying-peridot-58s2mnn.vercel.app/search?q={search_term_string}",
+      target: "https://nova-store-tmp.vercel.app/search?q={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   };
@@ -17,8 +17,8 @@ export default function JsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Nova Store",
-    url: "https://temporary-flying-peridot-58s2mnn.vercel.app",
-    logo: "https://temporary-flying-peridot-58s2mnn.vercel.app/logo.png",
+    url: "https://nova-store-tmp.vercel.app",
+    logo: "https://nova-store-tmp.vercel.app/logo.png",
     description: "Nova Store - Your Ultimate Online Shopping Destination",
     contactPoint: {
       "@type": "ContactPoint",

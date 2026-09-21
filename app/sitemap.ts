@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://temporary-flying-peridot-58s2mnn.vercel.app";
+  const baseUrl = "https://nova-store-tmp.vercel.app";
 
   return [
     {

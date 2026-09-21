@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://temporary-flying-peridot-58s2mnn.vercel.app/sitemap.xml
+Sitemap: https://nova-store-tmp.vercel.app/sitemap.xml
 
 # Disallow specific paths if needed
 # Disallow: /api/
