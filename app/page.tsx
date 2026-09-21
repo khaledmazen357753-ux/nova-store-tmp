@@ -157,7 +157,7 @@ export default function Home() {
               { review: "طلبت بنطلون شينو وحذاء كاجوال. المقاسات مضبوطة والتغليف محترم." }
             ].map((item, index) => (
               <div key={index} className="bg-gray-50 p-6 rounded-lg">
-                <p className="text-gray-700 mb-4 italic">"{item.review}"</p>
+                <p className="text-gray-700 mb-4 italic">{item.review}</p>
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
                   <div className="ml-3">
