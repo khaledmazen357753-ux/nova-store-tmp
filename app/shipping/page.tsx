@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export default function Shipping() {
   return (
     <div className="font-sans min-h-screen bg-gray-50">
