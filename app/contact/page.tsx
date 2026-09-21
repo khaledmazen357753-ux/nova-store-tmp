@@ -114,7 +114,7 @@ export default function Contact() {
                 <div>
                   <label className="block text-gray-700 font-semibold mb-2">الرسالة</label>
                   <textarea 
-                    rows="4"
+                    rows={4}
                     className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="اكتب رسالتك هنا"
                   ></textarea>
