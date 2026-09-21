@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import Link from "next/link";
-
 export default function Products() {
   const products = [
     { id: 1, name: "سنيكرز Nova Air", desc: "خفة وراحة طوال اليوم", price: 599, category: "shoes", discount: 16 },
