@@ -1,46 +1,37 @@
 import Link from "next/link";
 
+import Link from "next/link";
+
 export default function Products() {
   const products = [
-    { id: 1, name: "منتج متميز 1", price: 99, category: "إلكترونيات", image: "صورة" },
-    { id: 2, name: "منتج متميز 2", price: 149, category: "أزياء", image: "صورة" },
-    { id: 3, name: "منتج متميز 3", price: 79, category: "منزل", image: "صورة" },
-    { id: 4, name: "منتج متميز 4", price: 199, category: "إلكترونيات", image: "صورة" },
-    { id: 5, name: "منتج متميز 5", price: 129, category: "أزياء", image: "صورة" },
-    { id: 6, name: "منتج متميز 6", price: 89, category: "منزل", image: "صورة" },
-    { id: 7, name: "منتج متميز 7", price: 179, category: "إلكترونيات", image: "صورة" },
-    { id: 8, name: "منتج متميز 8", price: 159, category: "أزياء", image: "صورة" },
+    { id: 1, name: "سنيكرز Nova Air", desc: "خفة وراحة طوال اليوم", price: 599, category: "shoes", discount: 16 },
+    { id: 2, name: "حذاء كاجوال جلد", desc: "أناقة يومية", price: 799, category: "shoes", discount: 27 },
+    { id: 3, name: "حذاء جري Run Lite", desc: "أداء يومي", price: 699, category: "shoes", discount: 0 },
+    { id: 4, name: "جينز سليم فيت", desc: "قصة عملية وأنيقة", price: 499, category: "pants", discount: 0 },
+    { id: 5, name: "بوت شتوي سيتي", desc: "دفء وثَبات", price: 899, category: "shoes", discount: 0 },
+    { id: 6, name: "حذاء أكسفورد كلاسيك", desc: "حضور رسمي", price: 999, category: "shoes", discount: 0 },
+    { id: 7, name: "جينز شينو أسود", desc: "أناقة كلاسيكية", price: 549, category: "pants", discount: 15 },
+    { id: 8, name: "بنطلون جوغر بيج", desc: "راحة يومية", price: 479, category: "pants", discount: 0 },
   ];
 
   return (
-    <div className="font-sans min-h-screen bg-gray-50">
+    <div className="font-sans min-h-screen bg-white">
       {/* Header */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 px-4">
+      <section className="bg-gray-50 py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">المنتجات</h1>
-          <p className="text-lg opacity-90">تصفح تشكيلتنا المميزة من المنتجات عالية الجودة</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">المتجر</h1>
+          <p className="text-lg text-gray-600">تصفح تشكيلتنا المختارة من الأحذية والبنطلونات</p>
         </div>
       </section>
 
-      {/* Filters */}
-      <section className="bg-white py-4 px-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex gap-2">
-            <select className="border rounded-lg px-4 py-2">
-              <option>جميع الأقسام</option>
-              <option>إلكترونيات</option>
-              <option>أزياء</option>
-              <option>منزل</option>
-            </select>
-            <select className="border rounded-lg px-4 py-2">
-              <option>السعر: من الأقل للأعلى</option>
-              <option>السعر: من الأعلى للأقل</option>
-              <option>الأحدث</option>
-              <option>الأكثر مبيعاً</option>
-            </select>
-          </div>
-          <div className="text-gray-600">
-            عرض {products.length} منتج
+      {/* Categories */}
+      <section className="py-8 px-4 border-b">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex gap-4 flex-wrap">
+            <Link href="/products" className="px-4 py-2 bg-black text-white rounded font-medium">الكل</Link>
+            <Link href="/products?category=shoes" className="px-4 py-2 border border-gray-300 rounded font-medium hover:bg-gray-100">أحذية</Link>
+            <Link href="/products?category=pants" className="px-4 py-2 border border-gray-300 rounded font-medium hover:bg-gray-100">بنطلونات</Link>
+            <Link href="/products?category=offers" className="px-4 py-2 border border-gray-300 rounded font-medium hover:bg-gray-100">العروض</Link>
           </div>
         </div>
       </section>
@@ -50,21 +41,21 @@ export default function Products() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {products.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow group">
+              <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-48 bg-gray-200 flex items-center justify-center relative">
-                  <span className="text-gray-400">{product.image}</span>
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
-                    <Link href="/product/1" className="bg-white text-blue-600 px-4 py-2 rounded-full font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                      عرض التفاصيل
-                    </Link>
-                  </div>
+                  <span className="text-gray-400">صورة المنتج</span>
+                  {product.discount > 0 && (
+                    <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                      خصم {product.discount}%
+                    </span>
+                  )}
                 </div>
                 <div className="p-4">
-                  <span className="text-xs text-blue-600 font-semibold">{product.category}</span>
-                  <h3 className="font-semibold mb-2">{product.name}</h3>
+                  <h3 className="font-semibold mb-1 text-gray-900">{product.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{product.desc}</p>
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-lg">EGP {product.price}</span>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                    <span className="font-bold text-gray-900">EGP {product.price}</span>
+                    <button className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 transition-colors">
                       أضف للسلة
                     </button>
                   </div>
@@ -79,9 +70,8 @@ export default function Products() {
       <section className="py-8 px-4">
         <div className="max-w-6xl mx-auto flex justify-center gap-2">
           <button className="px-4 py-2 border rounded hover:bg-gray-100">السابق</button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded">1</button>
+          <button className="px-4 py-2 bg-black text-white rounded">1</button>
           <button className="px-4 py-2 border rounded hover:bg-gray-100">2</button>
-          <button className="px-4 py-2 border rounded hover:bg-gray-100">3</button>
           <button className="px-4 py-2 border rounded hover:bg-gray-100">التالي</button>
         </div>
       </section>

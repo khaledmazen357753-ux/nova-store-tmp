@@ -1,80 +1,57 @@
-import Link from "next/link";
-
 export default function AboutUs() {
   return (
-    <div className="font-sans min-h-screen bg-gray-50">
-      {/* Header */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">من نحن - Nova Store</h1>
-          <p className="text-xl opacity-90">وجهتك الأولى للتسوق الذكي والعصري</p>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">أهلاً بك في Nova Store</h2>
-            
-            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-              نؤمن بأن التسوق عبر الإنترنت يجب أن يكون تجربة ممتعة، سهلة، وآمنة بالكامل. لذلك، تأسس Nova Store لنقدم لك تشكيلة مختارة بعناية فائقة من المنتجات التي تلبي احتياجاتك اليومية وتضيف لمسة من التميز لحياتك، مع التركيز الدائم على أعلى معايير الجودة وأفضل الأسعار.
+    <div className="font-sans min-h-screen bg-white">
+      <section className="bg-gray-50 py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">من نحن</h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Nova Store - وجهتك للأحذية والبنطلونات المختارة بعناية
+          </p>
+          
+          <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">قصتنا</h2>
+            <p className="text-gray-700 mb-4">
+              نؤمن بأن الأحذية والبنطلونات ليست مجرد ملابس، بل هي أسلوب حياة. تأسس Nova Store ليقدم للعملاء المصريين تشكيلة مختارة من الأحذية والبنطلونات التي تجمع بين الجودة والأسعار المناسبة.
             </p>
+            <p className="text-gray-700">
+              نختار منتجاتنا بعناية فائقة من مصادر موثوقة، ونركز على الجودة والراحة والتصميم العصري. مع خيارات دفع مرنة تشمل الدفع عند الاستلام، والتوصيل السريع لجميع محافظات مصر.
+            </p>
+          </div>
 
-            <h3 className="text-xl font-bold mb-4 text-gray-800">لماذا تختار التسوق من Nova Store؟</h3>
-            
-            <div className="space-y-4 mb-8">
-              <div className="flex items-start">
-                <div className="bg-blue-100 p-3 rounded-full mr-4">
-                  <span className="text-2xl">✓</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">جودة موثوقة</h4>
-                  <p className="text-gray-600">نختار منتجاتنا بدقة لضمان حصولك على الأفضل دائماً.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <div className="bg-blue-100 p-3 rounded-full mr-4">
-                  <span className="text-2xl">✓</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">سهولة التسوق والدفع</h4>
-                  <p className="text-gray-600">نوفر لك خيارات دفع مرنة وآمنة تشمل الدفع عند الاستلام.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <div className="bg-blue-100 p-3 rounded-full mr-4">
-                  <span className="text-2xl">✓</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">خدمة عملاء راقية</h4>
-                  <p className="text-gray-600">فريقنا جاهز دائماً لمساعدتك والإجابة عن كل استفساراتك قبل وبعد الشراء.</p>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="text-3xl mb-4">🎯</div>
+              <h3 className="font-bold mb-2 text-gray-900">رؤيتنا</h3>
+              <p className="text-gray-600 text-sm">
+                أن نكون الخيار الأول للأحذية والبنطلونات في مصر من خلال الجودة والخدمة المتميزة.
+              </p>
             </div>
-
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
-              <p className="text-lg text-gray-700 text-center font-medium">
-                شكراً لاختيارك Nova Store.. نحن هنا لنلهم يومك ونلبي تطلعاتك!
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="text-3xl mb-4">💎</div>
+              <h3 className="font-bold mb-2 text-gray-900">قيمنا</h3>
+              <p className="text-gray-600 text-sm">
+                الجودة، الصدق، والالتزام برضا العملاء في كل خطوة.
+              </p>
+            </div>
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="text-3xl mb-4">🤝</div>
+              <h3 className="font-bold mb-2 text-gray-900">التزامنا</h3>
+              <p className="text-gray-600 text-sm">
+                تقديم منتجات عالية الجودة بأسعار مناسبة مع خدمة عملاء ممتازة.
               </p>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Call to Action */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4">هل لديك استفسار؟</h2>
-          <p className="text-gray-600 mb-6">فريقنا جاهز لمساعدتك في أي وقت</p>
-          <Link 
-            href="/contact" 
-            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-blue-700 transition-colors"
-          >
-            تواصل معنا
-          </Link>
+          <div className="bg-gray-900 text-white p-8 rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">لماذا Nova Store؟</h2>
+            <ul className="space-y-2 text-gray-300">
+              <li>• تشكيلة مختارة من الأحذية والبنطلونات</li>
+              <li>• جودة موثوقة وأسعار مباشرة</li>
+              <li>• دفع عند الاستلام في جميع المحافظات</li>
+              <li>• شحن سريع خلال 2-5 أيام</li>
+              <li>• ضمان استرجاع 14 يوم</li>
+            </ul>
+          </div>
         </div>
       </section>
     </div>
