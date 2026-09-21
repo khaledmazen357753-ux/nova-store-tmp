@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 
-export default function Products() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -182,5 +181,17 @@ export default function Products() {
         </section>
       )}
     </div>
+  );
+}
+
+export default function Products() {
+  return (
+    <Suspense fallback={<div className="font-sans min-h-screen bg-white py-12 px-4">
+      <div className="max-w-6xl mx-auto text-center">
+        <div className="text-gray-500">جاري التحميل...</div>
+      </div>
+    </div>}>
+      <ProductsContent />
+    </Suspense>
   );
 }
