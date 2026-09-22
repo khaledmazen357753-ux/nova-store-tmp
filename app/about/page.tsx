@@ -1,59 +1,12 @@
+import Image from "next/image";
+import Link from "next/link";
+
 export default function AboutUs() {
   return (
-    <div className="font-sans min-h-screen bg-white">
-      <section className="bg-gray-50 py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">من نحن</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Nova Store - وجهتك للأحذية والبنطلونات المختارة بعناية
-          </p>
-          
-          <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">قصتنا</h2>
-            <p className="text-gray-700 mb-4">
-              نؤمن بأن الأحذية والبنطلونات ليست مجرد ملابس، بل هي أسلوب حياة. تأسس Nova Store ليقدم للعملاء المصريين تشكيلة مختارة من الأحذية والبنطلونات التي تجمع بين الجودة والأسعار المناسبة.
-            </p>
-            <p className="text-gray-700">
-              نختار منتجاتنا بعناية فائقة من مصادر موثوقة، ونركز على الجودة والراحة والتصميم العصري. مع خيارات دفع مرنة تشمل الدفع عند الاستلام، والتوصيل السريع لجميع محافظات مصر.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="text-3xl mb-4">🎯</div>
-              <h3 className="font-bold mb-2 text-gray-900">رؤيتنا</h3>
-              <p className="text-gray-600 text-sm">
-                أن نكون الخيار الأول للأحذية والبنطلونات في مصر من خلال الجودة والخدمة المتميزة.
-              </p>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="text-3xl mb-4">💎</div>
-              <h3 className="font-bold mb-2 text-gray-900">قيمنا</h3>
-              <p className="text-gray-600 text-sm">
-                الجودة، الصدق، والالتزام برضا العملاء في كل خطوة.
-              </p>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="text-3xl mb-4">🤝</div>
-              <h3 className="font-bold mb-2 text-gray-900">التزامنا</h3>
-              <p className="text-gray-600 text-sm">
-                تقديم منتجات عالية الجودة بأسعار مناسبة مع خدمة عملاء ممتازة.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-gray-900 text-white p-8 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">لماذا Nova Store؟</h2>
-            <ul className="space-y-2 text-gray-300">
-              <li>• تشكيلة مختارة من الأحذية والبنطلونات</li>
-              <li>• جودة موثوقة وأسعار مباشرة</li>
-              <li>• دفع عند الاستلام في جميع المحافظات</li>
-              <li>• شحن سريع خلال 2-5 أيام</li>
-              <li>• ضمان استرجاع 14 يوم</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-    </div>
+    <main>
+      <section className="inner-hero"><div className="site-container"><span className="eyebrow">الحكاية وراء الاختيار</span><h1>نختار لك ما<br />نختاره لأنفسنا.</h1><p>Nova Store مساحة بسيطة للقطع التي تعيش معك، لا مجرد أشياء تملأ خزانتك.</p></div></section>
+      <section className="story-section"><div className="site-container"><div className="story-grid"><div className="story-copy"><span className="eyebrow">قصتنا</span><h2>أقل، لكن أفضل.</h2><p>بدأت Nova Store من سؤال بسيط: لماذا يصعب العثور على الأساسيات التي تجمع بين الشكل المميز والراحة والسعر العادل؟ لذلك بنينا متجراً يركز على ما يهم فعلاً — جودة تلمسها، قصّات تعيش، وتجربة شراء تشعرك بالثقة.</p><div className="story-points"><div className="story-point"><span className="story-point-number">01</span><div><strong>نختار ببطء</strong><span>لا نطارد كل ترند. نضيف القطعة عندما تستحق.</span></div></div><div className="story-point"><span className="story-point-number">02</span><div><strong>نسمع لك</strong><span>ملاحظاتك هي ما يجعل المجموعة القادمة أفضل.</span></div></div></div></div><div className="story-image"><Image src="/hero-editorial.png" alt="اختيارات من Nova Store" fill sizes="(max-width: 680px) 90vw, 45vw" /></div></div></div></section>
+      <section className="section section-white"><div className="site-container"><div className="section-heading"><div><span className="eyebrow">ما نؤمن به</span><h2>قيم بسيطة،<br />في كل تفصيلة.</h2></div><p>من طريقة اختيار المنتج إلى لحظة وصوله لبابك، نريد أن تكون التجربة واضحة ومريحة.</p></div><div className="review-grid" style={{ color: "var(--ink)" }}><div className="summary-card"><span className="story-point-number">01</span><h3>الجودة أولاً</h3><p>نبحث عن الخامة المريحة والتفاصيل التي تبقى جميلة مع الوقت.</p></div><div className="summary-card"><span className="story-point-number">02</span><h3>وضوح كامل</h3><p>صور وأسعار ومعلومات مباشرة، من غير مبالغة أو مفاجآت.</p></div><div className="summary-card"><span className="story-point-number">03</span><h3>خدمة إنسانية</h3><p>نحن هنا لنساعدك في المقاس والاختيار وبعد وصول الطلب أيضاً.</p></div></div><div style={{ textAlign: "center", marginTop: "45px" }}><Link href="/products" className="button button-primary">تصفح اختياراتنا <span className="button-arrow">←</span></Link></div></div></section>
+    </main>
   );
 }

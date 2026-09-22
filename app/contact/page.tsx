@@ -1,91 +1,19 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+
 export default function Contact() {
+  const [sent, setSent] = useState(false);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSent(true);
+  }
+
   return (
-    <div className="font-sans min-h-screen bg-white">
-      <section className="bg-gray-50 py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">اتصل بنا</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            فريقنا جاهز لمساعدتك في أي وقت
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-              <h2 className="text-2xl font-bold mb-6 text-gray-900">معلومات التواصل</h2>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="text-2xl mr-4">📞</div>
-                  <div>
-                    <div className="font-semibold text-gray-900">واتساب</div>
-                    <div className="text-gray-600">01000000000</div>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-2xl mr-4">📧</div>
-                  <div>
-                    <div className="font-semibold text-gray-900">البريد الإلكتروني</div>
-                    <div className="text-gray-600">hello@novastore.eg</div>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-2xl mr-4">📍</div>
-                  <div>
-                    <div className="font-semibold text-gray-900">العنوان</div>
-                    <div className="text-gray-600">القاهرة، مصر</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <h3 className="font-semibold text-gray-900 mb-4">تابعنا على</h3>
-                <div className="flex gap-4 text-2xl">
-                  <a href="#" className="hover:text-blue-600">📘</a>
-                  <a href="#" className="hover:text-pink-600">📷</a>
-                  <a href="#" className="hover:text-blue-400">🐦</a>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold mb-6 text-gray-900">أرسل لنا رسالة</h2>
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">الاسم</label>
-                  <input 
-                    type="text" 
-                    className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    placeholder="أدخل اسمك"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">البريد الإلكتروني</label>
-                  <input 
-                    type="email" 
-                    className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    placeholder="أدخل بريدك الإلكتروني"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">الرسالة</label>
-                  <textarea 
-                    rows={4}
-                    className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    placeholder="اكتب رسالتك هنا"
-                  ></textarea>
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-                >
-                  إرسال الرسالة
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <main>
+      <section className="inner-hero"><div className="site-container"><span className="eyebrow">نحن هنا لمساعدتك</span><h1>تواصل معنا.</h1><p>عندك سؤال عن المقاس أو الطلب؟ اكتب لنا، وسنرد عليك بأسرع وقت.</p></div></section>
+      <section className="page-content section-light"><div className="site-container"><div className="contact-layout"><div><span className="eyebrow">معلومات التواصل</span><h2 className="contact-title">خلينا نبدأ<br />حديثاً.</h2><p className="contact-copy">فريق Nova Store متاح لمساعدتك من السبت إلى الخميس، من 10 صباحاً حتى 8 مساءً.</p><div className="contact-list"><div><strong>واتساب</strong><span>01000000000</span></div><div><strong>البريد الإلكتروني</strong><span>hello@novastore.eg</span></div><div><strong>العنوان</strong><span>القاهرة، مصر</span></div></div></div><form className="contact-form" onSubmit={handleSubmit}><label>الاسم<input type="text" placeholder="اكتب اسمك" required /></label><label>البريد الإلكتروني<input type="email" placeholder="name@example.com" required /></label><label>رسالتك<textarea rows={5} placeholder="كيف يمكننا مساعدتك؟" required /></label><button type="submit" className="button button-primary">{sent ? "تم إرسال رسالتك ✓" : "إرسال الرسالة"}</button>{sent && <p className="form-success">وصلتنا رسالتك، سنعود إليك قريباً.</p>}</form></div></div></section>
+    </main>
   );
 }

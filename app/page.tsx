@@ -1,218 +1,134 @@
+import Image from "next/image";
 import Link from "next/link";
+import ProductCard from "./components/ProductCard";
+import { products } from "./lib/products";
+
+function ArrowIcon() {
+  return <span className="button-arrow" aria-hidden="true">←</span>;
+}
+
+function TrustIcon({ type }: { type: "truck" | "shield" | "refresh" }) {
+  if (type === "truck") {
+    return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="icon"><path d="M3 6.5h11v10H3zM14 10h3.8l3.2 3.2v3.3H14z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><circle cx="7" cy="18" r="1.7" stroke="currentColor" strokeWidth="1.5" /><circle cx="18" cy="18" r="1.7" stroke="currentColor" strokeWidth="1.5" /></svg>;
+  }
+  if (type === "shield") {
+    return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="icon"><path d="M12 3.5 19 6v5.2c0 4.5-2.7 7.6-7 9.3-4.3-1.7-7-4.8-7-9.3V6l7-2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="m8.8 12 2.1 2.1 4.4-4.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  }
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="icon"><path d="M20 11a8 8 0 0 0-14.8-3.8L3.5 9M3.5 5v4h4M4 13a8 8 0 0 0 14.8 3.8l1.7-1.8M20.5 19v-4h-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
 
 export default function Home() {
+  const featuredProducts = products.slice(0, 4);
+
   return (
-    <div className="font-sans min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="bg-gray-50 py-16 md:py-24 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 leading-tight">
-                أحذية وبنطلونات ترفع إطلالتك من أول خطوة
-              </h1>
-              <p className="text-lg text-gray-600 mb-8">
-                تشكيلة مختارة للبس اليومي والمناسبات. جودة واضحة، أسعار مباشرة، ودفع عند الاستلام.
-              </p>
-              <div className="flex gap-4">
-                <Link href="/products" className="bg-black text-white px-8 py-3 rounded font-semibold hover:bg-gray-800 transition-colors">
-                  تسوق الآن
-                </Link>
-                <Link href="/products?category=offers" className="border-2 border-black text-black px-8 py-3 rounded font-semibold hover:bg-gray-100 transition-colors">
-                  العروض الحالية
-                </Link>
+    <main>
+      <section className="hero">
+        <div className="site-container hero-inner">
+          <div className="hero-copy">
+            <span className="eyebrow">المجموعة الجديدة · 2026</span>
+            <h1>أساسياتك اليومية، <span>بأسلوبك.</span></h1>
+            <p className="hero-lead">قطع مختارة بعناية لتعيش يومك براحة وأناقة. جودة تلاحظها من أول لمسة، وتصاميم تليق بكل تفاصيلك.</p>
+            <div className="hero-actions">
+              <Link href="/products" className="button button-primary">اكتشف المجموعة <ArrowIcon /></Link>
+              <Link href="/products?category=offers" className="button button-ghost">تصفح العروض</Link>
+            </div>
+            <p className="hero-note">شحن سريع داخل مصر · <strong>الدفع عند الاستلام</strong> متاح</p>
+          </div>
+          <div className="hero-visual">
+            <span className="hero-number">01</span>
+            <div className="hero-image-wrap"><Image src="/hero-editorial.png" alt="سنيكرز وجينز من مجموعة Nova Store الجديدة" fill priority sizes="(max-width: 680px) 100vw, 46vw" /></div>
+            <div className="hero-tag">مصمم<br />ليومك</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-light" aria-labelledby="categories-title">
+        <div className="site-container">
+          <div className="section-heading">
+            <div><span className="eyebrow">تسوق حسب ذوقك</span><h2 id="categories-title">اختيارات مصممة<br />لحياتك اليومية</h2></div>
+            <p>من أول مشوار الصباح إلى آخر خروجة في اليوم — ستجد القطعة التي تكمل إطلالتك بسهولة.</p>
+          </div>
+          <div className="category-grid">
+            <Link href="/products?category=shoes" className="category-card tall">
+              <Image src="/product-sneaker.png" alt="تشكيلة الأحذية" fill sizes="(max-width: 680px) 100vw, 40vw" />
+              <div className="category-card-content"><h3>الأحذية</h3><p>راحة تبدأ من أول خطوة</p><span className="text-link">اكتشف التشكيلة <span>←</span></span></div>
+            </Link>
+            <Link href="/products?category=pants" className="category-card">
+              <Image src="/product-jeans.png" alt="تشكيلة البنطلونات" fill sizes="(max-width: 680px) 50vw, 30vw" />
+              <div className="category-card-content"><h3>البنطلونات</h3><p>قصة تناسبك تماماً</p><span className="text-link">تسوق الآن <span>←</span></span></div>
+            </Link>
+            <Link href="/products?category=offers" className="category-card">
+              <Image src="/product-loafer.png" alt="عروض Nova Store" fill sizes="(max-width: 680px) 50vw, 30vw" />
+              <div className="category-card-content"><h3>العروض</h3><p>اختياراتك المفضلة بسعر أفضل</p><span className="text-link">شاهد العروض <span>←</span></span></div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-white" aria-labelledby="featured-title">
+        <div className="site-container">
+          <div className="section-heading">
+            <div><span className="eyebrow">مختاراتنا لك</span><h2 id="featured-title">الأكثر طلباً</h2></div>
+            <Link href="/products" className="text-link">عرض كل المنتجات <span>←</span></Link>
+          </div>
+          <div className="products-grid">
+            {featuredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </div>
+      </section>
+
+      <section className="story-section" aria-labelledby="story-title">
+        <div className="site-container">
+          <div className="story-grid">
+            <div className="story-copy">
+              <span className="eyebrow">لماذا Nova؟</span>
+              <h2 id="story-title">نؤمن أن القطعة الصح تغيّر يومك.</h2>
+              <p>نبحث عن التفاصيل التي تصنع فرقاً حقيقياً: خامات مريحة، قصّات عملية، وألوان تظل جميلة مع الوقت. لا نضيف شيئاً لمجرد الإضافة — كل قطعة لها سبب.</p>
+              <div className="story-points">
+                <div className="story-point"><span className="story-point-number">01</span><div><strong>اختيارات مدروسة</strong><span>تشكيلة صغيرة، لكن كل قطعة تستحق مكانها.</span></div></div>
+                <div className="story-point"><span className="story-point-number">02</span><div><strong>جودة واضحة</strong><span>خامات مريحة تعيش معك أكثر.</span></div></div>
               </div>
+              <Link href="/about" className="text-link">تعرف على قصتنا <span>←</span></Link>
             </div>
-            <div className="flex justify-center">
-              <div className="w-full max-w-md h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-400 text-xl">صورة أحذية وبنطلونات</span>
-              </div>
-            </div>
+            <div className="story-image"><Image src="/hero-editorial.png" alt="تفاصيل من اختيارات Nova Store" fill sizes="(max-width: 680px) 90vw, 45vw" /></div>
+          </div>
+          <div className="trust-row">
+            <div className="trust-item"><span className="trust-icon"><TrustIcon type="truck" /></span><div><strong>توصيل سريع</strong><p>من 2 إلى 5 أيام لكل المحافظات</p></div></div>
+            <div className="trust-item"><span className="trust-icon"><TrustIcon type="shield" /></span><div><strong>تسوق بثقة</strong><p>دفع عند الاستلام واسترجاع خلال 14 يوم</p></div></div>
+            <div className="trust-item"><span className="trust-icon"><TrustIcon type="refresh" /></span><div><strong>خدمة من القلب</strong><p>فريقنا هنا لمساعدتك قبل وبعد الطلب</p></div></div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🚚</div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900">شحن سريع</h3>
-              <p className="text-gray-600">توصيل خلال 2–5 أيام</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">💵</div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900">الدفع عند الاستلام</h3>
-              <p className="text-gray-600">ادفع وأنت تستلم طلبك</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">🔄</div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900">ضمان الاسترجاع</h3>
-              <p className="text-gray-600">14 يوماً بدون تعقيد</p>
-            </div>
+      <section className="section section-dark" aria-labelledby="reviews-title">
+        <div className="site-container">
+          <div className="section-heading"><div><span className="eyebrow">قالوا عنا</span><h2 id="reviews-title">تجارب حقيقية<br />من ناس مثلّك</h2></div><p>رضا عملائنا هو المقياس الحقيقي لكل ما نفعله.</p></div>
+          <div className="review-grid">
+            <figure className="review-card"><div className="review-stars">★★★★★</div><blockquote>“السنيكرز مريح جداً وشكله في الحقيقة أحلى من الصور. بقى اختياري اليومي.”</blockquote><figcaption className="review-author">محمد · القاهرة</figcaption></figure>
+            <figure className="review-card"><div className="review-stars">★★★★★</div><blockquote>“الخامة ممتازة والمقاس مظبوط. تجربة شراء سهلة والتغليف محترم جداً.”</blockquote><figcaption className="review-author">سارة · الإسكندرية</figcaption></figure>
+            <figure className="review-card"><div className="review-stars">★★★★★</div><blockquote>“طلبت الجينز ووصل بسرعة. القصة مريحة واللون بالضبط زي الصورة.”</blockquote><figcaption className="review-author">عمر · الجيزة</figcaption></figure>
           </div>
         </div>
       </section>
 
-      {/* Selected Products */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-2 text-gray-900">منتجات مختارة</h2>
-            <p className="text-gray-600">أحذية وبنطلونات بجودة موثوقة</p>
-          </div>
-
-          {/* Categories */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900">أحذية</h3>
-              <p className="text-gray-600 mb-4">سنيكرز · كاجوال · بوت · كلاسيك</p>
-              <Link href="/products?category=shoes" className="text-gray-900 font-medium hover:underline">
-                عرض الكل →
-              </Link>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900">بنطلونات</h3>
-              <p className="text-gray-600 mb-4">جينز · شينو · جوغر · كارجو</p>
-              <Link href="/products?category=pants" className="text-gray-900 font-medium hover:underline">
-                عرض الكل →
-              </Link>
-            </div>
-          </div>
-
-          {/* Best Sellers */}
-          <div className="mb-16">
-            <h3 className="text-2xl font-bold mb-8 text-gray-900">الأكثر مبيعاً</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { name: "سنيكرز Nova Air", desc: "خفة وراحة طوال اليوم", price: 599, discount: 16 },
-                { name: "حذاء كاجوال جلد", desc: "أناقة يومية", price: 799, discount: 27 },
-                { name: "حذاء جري Run Lite", desc: "أداء يومي", price: 699, discount: 0 },
-                { name: "جينز سليم فيت", desc: "قصة عملية وأنيقة", price: 499, discount: 0 }
-              ].map((product, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center relative">
-                    <span className="text-gray-400">صورة المنتج</span>
-                    {product.discount > 0 && (
-                      <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                        خصم {product.discount}%
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold mb-1 text-gray-900">{product.name}</h4>
-                    <p className="text-sm text-gray-600 mb-3">{product.desc}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-gray-900">EGP {product.price}</span>
-                      <button className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 transition-colors">
-                        أضف للسلة
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* New Arrivals */}
-          <div>
-            <h3 className="text-2xl font-bold mb-8 text-gray-900">الأحدث وصولاً</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { name: "سنيكرز Nova Air", desc: "خفة وراحة طوال اليوم", price: 599 },
-                { name: "بوت شتوي سيتي", desc: "دفء وثَبات", price: 899 },
-                { name: "حذاء أكسفورد كلاسيك", desc: "حضور رسمي", price: 999 },
-                { name: "جينز سليم فيت", desc: "قصة عملية وأنيقة", price: 499 }
-              ].map((product, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-400">صورة المنتج</span>
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold mb-1 text-gray-900">{product.name}</h4>
-                    <p className="text-sm text-gray-600 mb-3">{product.desc}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-gray-900">EGP {product.price}</span>
-                      <button className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 transition-colors">
-                        أضف للسلة
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      <section className="newsletter">
+        <div className="site-container newsletter-inner">
+          <div><h2>خليك أول واحد يعرف.</h2><p>اشترك ليصلك جديدنا وعروضنا الخاصة قبل الجميع.</p></div>
+          <form className="newsletter-form"><input type="email" aria-label="البريد الإلكتروني" placeholder="بريدك الإلكتروني" required /><button type="submit">اشترك الآن ←</button></form>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold mb-12 text-center text-gray-900">آراء العملاء</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { review: "الجينز ممتاز والخامة تقيلة. الشحن وصل تاني يوم والدفع عند الاستلام سهّل الموضوع." },
-              { review: "السنيكرز خفيف وشكله في الحقيقة أحلى من الصور. هكرر الطلب." },
-              { review: "طلبت بنطلون شينو وحذاء كاجوال. المقاسات مضبوطة والتغليف محترم." }
-            ].map((item, index) => (
-              <div key={index} className="bg-gray-50 p-6 rounded-lg">
-                <p className="text-gray-700 mb-4 italic">{item.review}</p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-                  <div className="ml-3">
-                    <div className="font-semibold text-gray-900">عميل راضي</div>
-                    <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+      <footer className="site-footer">
+        <div className="site-container">
+          <div className="footer-grid">
+            <div className="footer-brand"><Link href="/" className="brand"><span className="brand-mark">N</span><span className="brand-text" style={{ color: "white" }}>NOVA <em>STORE</em></span></Link><p>أساسياتك اليومية، بلمسة تشبهك. اختيارات بعناية من مصر.</p></div>
+            <div><h3 className="footer-title">تسوق</h3><div className="footer-links"><Link href="/products">كل المنتجات</Link><Link href="/products?category=shoes">أحذية</Link><Link href="/products?category=pants">بنطلونات</Link><Link href="/products?category=offers">العروض</Link></div></div>
+            <div><h3 className="footer-title">مساعدتك</h3><div className="footer-links"><Link href="/about">قصتنا</Link><Link href="/shipping">الشحن والتوصيل</Link><Link href="/returns">الاستبدال والاسترجاع</Link><Link href="/contact">تواصل معنا</Link></div></div>
+            <div className="footer-contact"><h3 className="footer-title">تواصل معنا</h3><strong>واتساب</strong><br />01000000000<br /><strong>البريد الإلكتروني</strong><br />hello@novastore.eg</div>
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">Nova Store</h3>
-              <p className="text-gray-400 text-sm">
-                وجهتك للأحذية والبنطلونات المختارة بعناية. تسوق سهل، دفع عند الاستلام، وتجربة موثوقة من أول طلب.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">تسوق</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link href="/products?category=shoes" className="hover:text-white">أحذية</Link></li>
-                <li><Link href="/products?category=pants" className="hover:text-white">بنطلونات</Link></li>
-                <li><Link href="/products?category=new" className="hover:text-white">الأحدث وصولاً</Link></li>
-                <li><Link href="/products?category=offers" className="hover:text-white">العروض</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">الثقة والدعم</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link href="/about" className="hover:text-white">من نحن</Link></li>
-                <li><Link href="/shipping" className="hover:text-white">سياسة الشحن والتوصيل</Link></li>
-                <li><Link href="/returns" className="hover:text-white">الاستبدال والاسترجاع</Link></li>
-                <li><Link href="/contact" className="hover:text-white">اتصل بنا</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">تواصل</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li>واتساب: 01000000000</li>
-                <li>البريد: hello@novastore.eg</li>
-                <li>إنستغرام · فيسبوك · تيك توك</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
-            <p>© 2026 Nova Store. جميع الحقوق محفوظة.</p>
-          </div>
+          <div className="footer-bottom"><span>© 2026 Nova Store. جميع الحقوق محفوظة.</span><span>صُنع بحب في مصر · <Link href="/terms">الشروط والأحكام</Link> · <Link href="/privacy">الخصوصية</Link></span></div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }

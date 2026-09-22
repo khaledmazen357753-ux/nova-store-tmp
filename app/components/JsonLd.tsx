@@ -1,14 +1,14 @@
 export default function JsonLd() {
-  const schema = {
+  const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Nova Store",
     url: "https://nova-store-tmp.vercel.app",
-    description: "Nova Store is your one-stop online shop for quality products. Shop the latest trends with fast shipping and secure payments.",
-    inLanguage: ["en-US", "ar-EG"],
+    description: "أحذية وبنطلونات مختارة بعناية لتكمل إطلالتك اليومية.",
+    inLanguage: "ar-EG",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://nova-store-tmp.vercel.app/search?q={search_term_string}",
+      target: "https://nova-store-tmp.vercel.app/products?search={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   };
@@ -18,31 +18,14 @@ export default function JsonLd() {
     "@type": "Organization",
     name: "Nova Store",
     url: "https://nova-store-tmp.vercel.app",
-    logo: "https://nova-store-tmp.vercel.app/logo.png",
-    description: "Nova Store - Your Ultimate Online Shopping Destination",
+    description: "اختيارات يومية بأسلوب واضح وجودة تستحقها.",
     contactPoint: {
       "@type": "ContactPoint",
-      telephone: "+1-234-567-8900",
+      telephone: "+20-100-000-0000",
       contactType: "customer service",
-      availableLanguage: ["English", "Arabic"],
+      availableLanguage: ["Arabic"],
     },
-    sameAs: [
-      "https://facebook.com/novastore",
-      "https://twitter.com/novastore",
-      "https://instagram.com/novastore",
-    ],
   };
 
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-    </>
-  );
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} /></>;
 }

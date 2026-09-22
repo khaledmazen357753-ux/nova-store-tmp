@@ -1,56 +1,7 @@
+import Link from "next/link";
+
 export default function Shipping() {
   return (
-    <div className="font-sans min-h-screen bg-gray-50">
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">سياسة الشحن والتوصيل</h1>
-          <p className="text-lg opacity-90">كل ما تحتاج معرفته عن طرق الشحن والتوصيل</p>
-        </div>
-      </section>
-
-      <section className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 space-y-8">
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">طرق الشحن المتاحة</h2>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-semibold text-lg">الشحن القياسي</h3>
-                  <p className="text-gray-600">التوصيل خلال 3-5 أيام عمل - مجاني للطلبات فوق 300 جنيه</p>
-                </div>
-                <div className="border-l-4 border-green-500 pl-4">
-                  <h3 className="font-semibold text-lg">الشحن السريع</h3>
-                  <p className="text-gray-600">التوصيل خلال 1-2 يوم عمل - رسوم 25 جنيه</p>
-                </div>
-                <div className="border-l-4 border-purple-500 pl-4">
-                  <h3 className="font-semibold text-lg">الدفع عند الاستلام</h3>
-                  <p className="text-gray-600">التوصيل خلال 3-5 أيام عمل - رسوم 15 جنيه</p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">مناطق التوصيل</h2>
-              <p className="text-gray-600 mb-4">نوفر خدمة التوصيل لجميع المحافظات المصرية</p>
-              <ul className="space-y-2 text-gray-600">
-                <li>✓ القاهرة والجيزة - توصيل في 24-48 ساعة</li>
-                <li>✓ الإسكندرية - توصيل في 48 ساعة</li>
-                <li>✓ باقي المحافظات - توصيل في 3-5 أيام عمل</li>
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">معلومات إضافية</h2>
-              <ul className="space-y-2 text-gray-600">
-                <li>• يتم الشحن من السبت إلى الخميس</li>
-                <li>• يمكن تتبع الطلب من خلال رقم الشحن المرسل</li>
-                <li>• يرجى التأكد من العنوان ورقم الهاتف بدقة</li>
-                <li>• سيتم التواصل معك قبل التوصيل للتأكد من الاستلام</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <main><section className="inner-hero"><div className="site-container"><span className="eyebrow">بكل وضوح</span><h1>الشحن والتوصيل</h1><p>نوصل اختياراتك لبابك، بسرعة وبدون تعقيد.</p></div></section><section className="page-content section-light"><div className="site-container"><div className="policy-card"><section><h2>طرق التوصيل</h2><div className="shipping-options"><div className="shipping-option"><strong>الشحن القياسي</strong><span>3–5 أيام عمل<br />مجاني للطلبات فوق 800 ج.م</span></div><div className="shipping-option"><strong>الشحن السريع</strong><span>1–2 يوم عمل<br />رسوم التوصيل 25 ج.م</span></div><div className="shipping-option"><strong>الدفع عند الاستلام</strong><span>متاح لكل المحافظات<br />رسوم إضافية 15 ج.م</span></div></div></section><section><h2>مناطق التوصيل</h2><p>نوصل إلى جميع المحافظات المصرية. القاهرة والجيزة خلال 24–48 ساعة، الإسكندرية خلال 48 ساعة، وباقي المحافظات خلال 3–5 أيام عمل.</p></section><section><h2>معلومات مهمة</h2><ul><li>يتم الشحن من السبت إلى الخميس.</li><li>سنتواصل معك قبل التوصيل لتأكيد العنوان والطلب.</li><li>تأكد من كتابة رقم الهاتف والعنوان بشكل دقيق.</li><li>يمكنك متابعة طلبك من خلال رقم الشحن الذي يصلك بعد التأكيد.</li></ul></section><div className="policy-callout">عندك سؤال عن طلبك؟ <Link href="/contact" className="text-link" style={{ margin: 0 }}>تواصل معنا <span>←</span></Link></div></div></div></section></main>
   );
 }
