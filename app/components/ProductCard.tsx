@@ -57,8 +57,8 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
       <div className="product-card-info">
         <div className="product-card-meta">
-          <span>{product.categoryLabel}</span>
-          <span className="rating" aria-label="تقييم 4.9 من 5">★ 4.9</span>
+          <span>{product.brand} · {product.genderLabel}</span>
+          <span className="rating" aria-label={`تقييم ${product.rating} من 5`}>★ {product.rating} ({product.reviewCount})</span>
         </div>
         <Link href={`/product/${product.id}`} className="product-name">{product.name}</Link>
         <p className="product-description">{product.description}</p>

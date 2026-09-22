@@ -1,3 +1,5 @@
+export type Gender = "men" | "women";
+
 export type Product = {
   id: number;
   name: string;
@@ -6,9 +8,16 @@ export type Product = {
   oldPrice?: number;
   category: "shoes" | "pants";
   categoryLabel: string;
+  gender: Gender;
+  genderLabel: string;
+  brand: string;
   image: string;
   badge?: string;
   sizes?: string[];
+  rating: number;
+  reviewCount: number;
+  salesCount: number;
+  createdAt: string;
 };
 
 export const products: Product[] = [
@@ -20,9 +29,16 @@ export const products: Product[] = [
     oldPrice: 715,
     category: "shoes",
     categoryLabel: "أحذية",
+    gender: "men",
+    genderLabel: "رجالي",
+    brand: "Nova",
     image: "/product-sneaker.png",
     badge: "الأكثر مبيعاً",
     sizes: ["40", "41", "42", "43", "44"],
+    rating: 4.9,
+    reviewCount: 128,
+    salesCount: 340,
+    createdAt: "2026-09-10",
   },
   {
     id: 2,
@@ -32,9 +48,16 @@ export const products: Product[] = [
     oldPrice: 999,
     category: "shoes",
     categoryLabel: "أحذية",
+    gender: "men",
+    genderLabel: "رجالي",
+    brand: "Heritage",
     image: "/product-loafer.png",
     badge: "خصم 20%",
     sizes: ["40", "41", "42", "43"],
+    rating: 4.7,
+    reviewCount: 86,
+    salesCount: 214,
+    createdAt: "2026-08-27",
   },
   {
     id: 3,
@@ -43,9 +66,16 @@ export const products: Product[] = [
     price: 499,
     category: "pants",
     categoryLabel: "بنطلونات",
+    gender: "men",
+    genderLabel: "رجالي",
+    brand: "Urban Form",
     image: "/product-jeans.png",
     badge: "جديد",
     sizes: ["30", "32", "34", "36"],
+    rating: 4.8,
+    reviewCount: 72,
+    salesCount: 176,
+    createdAt: "2026-09-18",
   },
   {
     id: 4,
@@ -54,8 +84,15 @@ export const products: Product[] = [
     price: 699,
     category: "shoes",
     categoryLabel: "أحذية",
+    gender: "women",
+    genderLabel: "حريمي",
+    brand: "Nova",
     image: "/product-sneaker.png",
-    sizes: ["40", "41", "42", "43", "44"],
+    sizes: ["37", "38", "39", "40", "41"],
+    rating: 4.9,
+    reviewCount: 94,
+    salesCount: 198,
+    createdAt: "2026-09-15",
   },
   {
     id: 5,
@@ -65,9 +102,16 @@ export const products: Product[] = [
     oldPrice: 649,
     category: "pants",
     categoryLabel: "بنطلونات",
+    gender: "men",
+    genderLabel: "رجالي",
+    brand: "Urban Form",
     image: "/product-jeans.png",
     badge: "خصم 15%",
     sizes: ["30", "32", "34", "36"],
+    rating: 4.6,
+    reviewCount: 51,
+    salesCount: 143,
+    createdAt: "2026-08-12",
   },
   {
     id: 6,
@@ -76,8 +120,15 @@ export const products: Product[] = [
     price: 999,
     category: "shoes",
     categoryLabel: "أحذية",
+    gender: "men",
+    genderLabel: "رجالي",
+    brand: "Heritage",
     image: "/product-loafer.png",
     sizes: ["40", "41", "42", "43"],
+    rating: 4.5,
+    reviewCount: 38,
+    salesCount: 97,
+    createdAt: "2026-07-29",
   },
   {
     id: 7,
@@ -86,9 +137,16 @@ export const products: Product[] = [
     price: 579,
     category: "pants",
     categoryLabel: "بنطلونات",
+    gender: "women",
+    genderLabel: "حريمي",
+    brand: "Linea",
     image: "/product-jeans.png",
     badge: "جديد",
-    sizes: ["30", "32", "34", "36"],
+    sizes: ["28", "30", "32", "34"],
+    rating: 4.7,
+    reviewCount: 47,
+    salesCount: 121,
+    createdAt: "2026-09-20",
   },
   {
     id: 8,
@@ -97,8 +155,51 @@ export const products: Product[] = [
     price: 629,
     category: "shoes",
     categoryLabel: "أحذية",
+    gender: "women",
+    genderLabel: "حريمي",
+    brand: "Nova",
     image: "/product-sneaker.png",
-    sizes: ["40", "41", "42", "43", "44"],
+    sizes: ["37", "38", "39", "40", "41"],
+    rating: 4.4,
+    reviewCount: 29,
+    salesCount: 83,
+    createdAt: "2026-07-15",
+  },
+  {
+    id: 9,
+    name: "Studio Straight",
+    description: "بنطلون بقصة مستقيمة وحضور هادئ",
+    price: 529,
+    category: "pants",
+    categoryLabel: "بنطلونات",
+    gender: "women",
+    genderLabel: "حريمي",
+    brand: "Linea",
+    image: "/product-jeans.png",
+    sizes: ["28", "30", "32", "34"],
+    rating: 4.8,
+    reviewCount: 63,
+    salesCount: 112,
+    createdAt: "2026-09-05",
+  },
+  {
+    id: 10,
+    name: "City Derby",
+    description: "حذاء رسمي خفيف للمشاوير المهمة",
+    price: 899,
+    oldPrice: 1_049,
+    category: "shoes",
+    categoryLabel: "أحذية",
+    gender: "men",
+    genderLabel: "رجالي",
+    brand: "Maison 24",
+    image: "/product-loafer.png",
+    badge: "خصم 14%",
+    sizes: ["40", "41", "42", "43"],
+    rating: 4.3,
+    reviewCount: 24,
+    salesCount: 68,
+    createdAt: "2026-06-30",
   },
 ];
 

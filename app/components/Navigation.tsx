@@ -47,6 +47,8 @@ export default function Navigation() {
           <div className={`nav-links ${isMenuOpen ? "is-open" : ""}`}>
             <Link href="/" onClick={() => setIsMenuOpen(false)}>الرئيسية</Link>
             <Link href="/products" onClick={() => setIsMenuOpen(false)}>المتجر</Link>
+            <Link href="/products?gender=men" onClick={() => setIsMenuOpen(false)}>رجالي</Link>
+            <Link href="/products?gender=women" onClick={() => setIsMenuOpen(false)}>حريمي</Link>
             <Link href="/products?category=shoes" onClick={() => setIsMenuOpen(false)}>أحذية</Link>
             <Link href="/products?category=pants" onClick={() => setIsMenuOpen(false)}>بنطلونات</Link>
             <Link href="/products?category=offers" onClick={() => setIsMenuOpen(false)} className="nav-sale">العروض</Link>

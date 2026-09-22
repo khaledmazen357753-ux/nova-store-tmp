@@ -242,6 +242,21 @@ button { cursor: pointer; }
 .shipping-option strong { margin-bottom: 8px; font-size: 13px; }
 .shipping-option span { color: var(--muted); font-size: 11px; line-height: 1.7; }
 
+/* Catalog filters */
+.catalog-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 30px; margin-bottom: 23px; padding: 22px; background: white; border: 1px solid var(--line); }
+.catalog-filter-block { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.filter-label { flex: 0 0 auto; color: var(--ink); font-size: 11px; font-weight: 800; }
+.filter-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.catalog-toolbar .filter-button { padding: 8px 14px; font-size: 11px; }
+.catalog-selects { display: flex; grid-column: 1 / -1; gap: 16px; padding-top: 20px; border-top: 1px solid var(--line); }
+.catalog-select-label { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 11px; font-weight: 800; }
+.catalog-select-label select { min-width: 195px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 0; outline: 0; background: var(--paper); color: var(--ink); font-size: 11px; cursor: pointer; }
+.catalog-select-label select:focus { border-color: var(--accent); }
+.catalog-results-bar { display: flex; align-items: center; gap: 18px; min-height: 36px; margin-bottom: 26px; color: var(--muted); font-size: 11px; }
+.active-sort { margin-inline-start: auto; }
+.clear-filters { padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 11px; }
+.clear-filters:hover { text-decoration: underline; }
+
 /* Cart */
 .cart-layout { display: grid; grid-template-columns: 1.45fr .8fr; gap: 55px; align-items: start; }
 .cart-items { display: grid; gap: 0; }
@@ -345,6 +360,14 @@ button { cursor: pointer; }
   .page-content { padding-block: 45px; }
   .filter-row { margin-bottom: 28px; }
   .filter-button { padding: 9px 15px; font-size: 11px; }
+  .catalog-toolbar { grid-template-columns: 1fr; gap: 19px; padding: 16px; }
+  .catalog-filter-block { display: block; }
+  .filter-label { display: block; margin-bottom: 10px; }
+  .catalog-selects { display: grid; grid-template-columns: 1fr; gap: 12px; padding-top: 17px; }
+  .catalog-select-label { justify-content: space-between; }
+  .catalog-select-label select { min-width: 0; width: 66%; }
+  .catalog-results-bar { flex-wrap: wrap; gap: 10px 16px; margin-bottom: 20px; }
+  .active-sort { margin-inline-start: 0; width: 100%; order: 3; }
   .contact-layout { grid-template-columns: 1fr; gap: 42px; }
   .contact-form { padding: 22px; }
   .policy-card { padding: 24px 20px; }
