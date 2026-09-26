@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@theme {
+  /* VOLT identity — Dark Mode OLED + neon accents (per design reference: dark-mode-oled style) */
+  --color-ink: #0a0a10; /* charcoal black background */
+  --color-panel: #12121c; /* card surface */
+  --color-panel-2: #1a1a29; /* elevated surface */
+  --color-line: #26263a; /* borders */
+  --color-neon: #d4ff3f; /* lemon neon — primary accent */
+  --color-violet: #8b5cf6; /* shiny purple — secondary accent */
+  --color-mint: #3dff88; /* phosphor green — success / free shipping */
+  --color-danger: #ff4d5e; /* errors / discount badges */
+  --color-fog: #a0a3b1; /* muted text */
+  --color-snow: #f4f4f8; /* main text */
+
+  --font-sans: var(--font-tajawal), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-cairo), var(--font-tajawal), sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  /* خطوط self-hosted عبر Fontsource (Cairo للعناوين + Tajawal للنصوص) */
+  --font-cairo: "Cairo Variable", "Cairo", "Segoe UI", sans-serif;
+  --font-tajawal: "Tajawal", "Segoe UI", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-neon);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-neon);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a55;
+}
+
+/* ===== helpers ===== */
+.container-x {
+  @apply mx-auto w-full max-w-6xl px-4;
+}
+
+.bg-dots {
+  background-image: radial-gradient(circle, rgba(212, 255, 63, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.neon-glow {
+  box-shadow: 0 0 24px rgba(212, 255, 63, 0.35), 0 0 70px rgba(212, 255, 63, 0.12);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(212, 255, 63, 0.5);
+}
+
+/* ===== component classes ===== */
+.btn-neon {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-neon px-6 py-3 font-bold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:px-7;
+}
+
+.btn-ghost {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-line bg-panel/60 px-6 py-3 font-bold text-snow transition-all duration-200 hover:border-neon/50 hover:text-neon sm:px-7;
+}
+
+.btn-dark {
+  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-panel-2 px-4 py-2 text-sm font-bold text-snow transition-colors hover:border-neon/50 hover:text-neon;
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3.5 py-1.5 text-sm text-fog;
+}
+
+.card {
+  @apply rounded-2xl border border-line bg-panel;
+}
+
+.input {
+  @apply min-h-12 w-full rounded-xl border border-line bg-panel-2 px-4 py-3 text-snow transition-colors placeholder:text-fog/50 focus:border-neon/60 focus:outline-none;
+}
+
+.label {
+  @apply mb-1.5 block text-sm font-bold text-snow;
+}
+
+.section-title {
+  @apply font-display text-2xl font-black text-snow sm:text-3xl md:text-4xl;
+}
+
+/* ===== animations ===== */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(50%);
+  }
+}
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+.marquee-wrap:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.animate-floaty {
+  animation: floaty 5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgba(212, 255, 63, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 34px rgba(212, 255, 63, 0.55);
+  }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2.6s ease-in-out infinite;
+}
+
+/* scroll reveal (added via Reveal component) */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-marquee,
+  .animate-floaty,
+  .animate-pulse-glow {
+    animation: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
