@@ -1,130 +1,250 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import BuyBox from "../../components/BuyBox";
+import LookBundle from "../../components/LookBundle";
+import ProductCard from "../../components/ProductCard";
+import Reviews from "../../components/Reviews";
+import JsonLd from "../../components/JsonLd";
+import { SITE_URL } from "../../lib/site";
+import {
+  ArrowLeftIcon,
+  CashIcon,
+  CheckCircleIcon,
+  FireIcon,
+  RefreshIcon,
+  StarIcon,
+  TagIcon,
+  TruckIcon,
+} from "../../components/icons";
+import { categories, getProduct, products } from "../../lib/products";
 
-export default function ProductDetail() {
+export function generateStaticParams() {
+  return products.map((p) => ({ id: String(p.id) }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const p = getProduct(Number(id));
+  if (!p) return {};
+  return {
+    title: p.name,
+    description: `${p.desc} — EGP ${p.price} من VOLT. دفع عند الاستلام واستبدال خلال 14 يوم.`,
+  };
+}
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const product = getProduct(Number(id));
+  if (!product) notFound();
+
+  const categoryName = categories.find((c) => c.key === product.category)?.name ?? "";
+  const related = products
+    .filter((p) => p.category === product.category && p.id !== product.id)
+    .slice(0, 4);
+  const off = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
+
+  const siteUrl = SITE_URL;
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.desc,
+    image: [`${siteUrl}${product.img ?? "/products/hero.jpg"}`],
+    sku: `VOLT-${product.id}`,
+    brand: { "@type": "Brand", name: "VOLT" },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: product.rating,
+      reviewCount: product.reviews,
+    },
+    offers: {
+      "@type": "Offer",
+      price: product.price,
+      priceCurrency: "EGP",
+      availability: "https://schema.org/InStock",
+      url: `${siteUrl}/product/${product.id}`,
+    },
+  };
+
   return (
-    <div className="font-sans min-h-screen bg-gray-50">
-      {/* Header */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">تفاصيل المنتج</h1>
-          <p className="text-lg opacity-90">سماعة لاسلكية ذكية - صوت نقي وبطارية تدوم طويلاً</p>
-        </div>
-      </section>
+    <div className="container-x py-8">
+      <JsonLd data={productJsonLd} />
+      {/* المسار */}
+      <nav aria-label="مسار التنقل" className="flex flex-wrap items-center gap-1.5 text-xs text-fog">
+        <Link href="/" className="transition-colors hover:text-neon">
+          الرئيسية
+        </Link>
+        <span>/</span>
+        <Link href="/products" className="transition-colors hover:text-neon">
+          المنتجات
+        </Link>
+        <span>/</span>
+        <Link href={`/products?category=${product.category}`} className="transition-colors hover:text-neon">
+          {categoryName}
+        </Link>
+        <span>/</span>
+        <span className="text-snow">{product.name}</span>
+      </nav>
 
-      {/* Product Details */}
-      <section className="py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Product Images */}
-            <div>
-              <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
-                <div className="h-96 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-gray-400 text-xl">صورة المنتج الرئيسية</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded shadow p-2 cursor-pointer hover:shadow-md">
-                    <div className="h-20 bg-gray-200 rounded flex items-center justify-center">
-                      <span className="text-gray-400 text-xs">صورة {i}</span>
-                    </div>
-                  </div>
+      <div className="mt-6 grid gap-8 lg:grid-cols-2">
+        {/* الصورة */}
+        <div className="card relative aspect-square overflow-hidden">
+          {product.img ? (
+            <Image
+              src={product.img}
+              alt={product.name}
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+            />
+          ) : (
+            <div className="bg-dots absolute inset-0 grid place-items-center text-fog">
+              <TagIcon size={80} />
+            </div>
+          )}
+          {off > 0 && (
+            <span className="absolute right-3 top-3 rounded-xl bg-danger px-3 py-1.5 text-sm font-black text-white">
+              خصم {off}%
+            </span>
+          )}
+          {product.trending && (
+            <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-xl bg-ink/85 px-3 py-1.5 text-sm font-black text-neon backdrop-blur">
+              <FireIcon size={15} />
+              ترند تيك توك
+            </span>
+          )}
+        </div>
+
+        {/* التفاصيل */}
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip">{categoryName}</span>
+            {product.trending && (
+              <span className="chip border-neon/30 bg-neon/10 text-neon">
+                <FireIcon size={13} />
+                ترند
+              </span>
+            )}
+          </div>
+
+          <h1 className="mt-3 font-display text-2xl font-black leading-snug text-snow sm:text-3xl">
+            {product.name}
+          </h1>
+
+          <div className="mt-3 flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <StarIcon
+                  key={i}
+                  size={16}
+                  className={i < Math.round(product.rating) ? "text-neon" : "text-line"}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-fog">
+              {product.rating} ({product.reviews.toLocaleString("en")} تقييم)
+            </span>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-end gap-3">
+            <span className="font-display text-4xl font-black text-neon">EGP {product.price}</span>
+            {product.oldPrice && (
+              <>
+                <span className="text-lg text-fog line-through">{product.oldPrice}</span>
+                <span className="rounded-lg bg-mint/15 px-2.5 py-1 text-sm font-bold text-mint">
+                  وفّر EGP {product.oldPrice - product.price}
+                </span>
+              </>
+            )}
+          </div>
+
+          <p className="mt-4 leading-relaxed text-fog">{product.desc}</p>
+
+          {product.colors && (
+            <div className="mt-5">
+              <span className="label">اللون</span>
+              <div className="flex gap-2">
+                {product.colors.map((c) => (
+                  <span
+                    key={c}
+                    className="h-9 w-9 rounded-full border-2 border-line"
+                    style={{ backgroundColor: c }}
+                    aria-label={`اللون ${c}`}
+                  />
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Product Info */}
+          <BuyBox product={product} />
+
+          {/* المميزات */}
+          <ul className="mt-8 space-y-2.5">
+            {product.features.map((f) => (
+              <li key={f} className="flex items-start gap-2.5 text-sm text-snow">
+                <CheckCircleIcon size={18} className="mt-0.5 shrink-0 text-mint" />
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          {/* الثقة */}
+          <div className="mt-8 grid grid-cols-3 gap-3 rounded-2xl border border-line bg-panel p-4 text-center">
             <div>
-              <div className="bg-white rounded-lg shadow-lg p-8">
-                <div className="flex items-center mb-4">
-                  <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-semibold">
-                    إلكترونيات
-                  </span>
-                  <div className="ml-4 text-yellow-400">⭐⭐⭐⭐⭐ (45 تقييم)</div>
-                </div>
-
-                <h2 className="text-2xl font-bold mb-4">سماعة لاسلكية ذكية - صوت نقي وبطارية تدوم طويلاً</h2>
-                
-                <p className="text-gray-600 mb-6">
-                  استمتع بتجربة صوتية استثنائية مع سماعاتنا اللاسلكية الذكية. تصميم عصري أنيق، صوت نقي وواضح، وبطارية تدوم طويلاً لتستمتع بالموسيقى طوال اليوم.
-                </p>
-
-                <div className="mb-6">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">EGP 299</div>
-                  <div className="text-sm text-gray-500">شامل الضريبة</div>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-3">المميزات الأساسية:</h3>
-                  <ul className="space-y-2 text-gray-600">
-                    <li className="flex items-center">
-                      <span className="text-green-500 ml-2">✓</span>
-                      تصميم عصري وأنيق يناسب كافة الاستخدامات
-                    </li>
-                    <li className="flex items-center">
-                      <span className="text-green-500 ml-2">✓</span>
-                      خامات عالية الجودة تضمن الاستدامة والتحمل
-                    </li>
-                    <li className="flex items-center">
-                      <span className="text-green-500 ml-2">✓</span>
-                      سهولة الاستخدام والتشغيل الفوري
-                    </li>
-                    <li className="flex items-center">
-                      <span className="text-green-500 ml-2">✓</span>
-                      بطارية تدوم حتى 20 ساعة
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-3">اللون:</h3>
-                  <div className="flex gap-2">
-                    <button className="w-8 h-8 rounded-full bg-black border-2 border-blue-500"></button>
-                    <button className="w-8 h-8 rounded-full bg-white border-2 border-gray-300"></button>
-                    <button className="w-8 h-8 rounded-full bg-blue-500 border-2 border-gray-300"></button>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <button className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                    أضف للسلة
-                  </button>
-                  <button className="flex-1 border-2 border-blue-600 text-blue-600 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
-                    اشترِ الآن
-                  </button>
-                </div>
-
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <p className="text-green-700 text-sm">
-                    ✓ منتج أصلي 100% مع ضمان الاستبدال خلال 14 يوم
-                  </p>
-                </div>
-              </div>
+              <TruckIcon size={22} className="mx-auto text-neon" />
+              <div className="mt-1.5 text-xs font-bold text-snow">توصيل 24-48 ساعة</div>
+            </div>
+            <div>
+              <RefreshIcon size={22} className="mx-auto text-neon" />
+              <div className="mt-1.5 text-xs font-bold text-snow">استبدال 14 يوم</div>
+            </div>
+            <div>
+              <CashIcon size={22} className="mx-auto text-neon" />
+              <div className="mt-1.5 text-xs font-bold text-snow">دفع عند الاستلام</div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Related Products */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold mb-8">منتجات مشابهة قد تعجبك</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="h-32 bg-gray-200 rounded mb-4 flex items-center justify-center">
-                  <span className="text-gray-400">صورة</span>
-                </div>
-                <h3 className="font-semibold mb-2">منتج مشابه {item}</h3>
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">EGP {200 + item * 20}</span>
-                  <Link href={`/product/${item}`} className="text-blue-600 hover:underline">عرض</Link>
-                </div>
-              </div>
+      {/* أكمل الإكسسوار */}
+      <LookBundle product={product} />
+
+      {/* التقييمات */}
+      <div className="mt-14">
+        <Reviews title="تقييمات المنتج" />
+      </div>
+
+      {/* منتجات مشابهة */}
+      {related.length > 0 && (
+        <section className="mt-14">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="section-title">زيه بس مختلف</h2>
+            <Link
+              href={`/products?category=${product.category}`}
+              className="flex items-center gap-1.5 text-sm font-bold text-neon hover:brightness-110"
+            >
+              شوف القسم كله
+              <ArrowLeftIcon size={16} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

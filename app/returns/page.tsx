@@ -1,60 +1,114 @@
-export default function Returns() {
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  CheckCircleIcon,
+  RefreshIcon,
+  TruckIcon,
+  WhatsAppIcon,
+} from "../components/icons";
+
+export const metadata: Metadata = {
+  title: "الاستبدال والاسترجاع",
+  description:
+    "استبدال أو استرجاع خلال 14 يوماً بدون أسئلة معقدة — سياسة VOLT الواضحة والبسيطة.",
+};
+
+const STEPS = [
+  {
+    n: "1",
+    t: "اطلب الاستبدال",
+    d: "كلمنا واتساب برقم طلبك وقولنا المشكلة — بنرد في دقايق خلال مواعيد العمل.",
+  },
+  {
+    n: "2",
+    t: "التسليم",
+    d: "سلّم المنتج للمندوب وقت التوصيل الجديد، أو شحنه لأي فرع قريب منك.",
+  },
+  {
+    n: "3",
+    t: "استلم البديل أو فلوسك",
+    d: "البديل بيوصلك فوراً، والاسترجاع بيرجع بنفس طريقة الدفع خلال 3 أيام عمل.",
+  },
+];
+
+const CONDITIONS = [
+  "المنتج بحالته الأصلية وبعلبه وكل ملحقاته",
+  "الاستبدال خلال 14 يوم من تاريخ الاستلام",
+  "المنتجات المعيبة من المصنع بتتستبدل فوراً ومن غير أي رسوم",
+  "لازم فاتورة أو رقم الطلب موجود",
+];
+
+export default function ReturnsPage() {
   return (
-    <div className="font-sans min-h-screen bg-gray-50">
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">سياسة الاستبدال والاسترجاع</h1>
-          <p className="text-lg opacity-90">ضمان استبدال واسترجاع مرن لراحتك</p>
+    <div className="container-x py-12">
+      <div className="mx-auto max-w-3xl">
+        <div className="text-center">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-neon/10 text-neon">
+            <RefreshIcon size={30} />
+          </span>
+          <h1 className="mt-5 font-display text-3xl font-black text-snow sm:text-4xl">
+            استبدال واسترجاع خلال <span className="text-glow text-neon">14 يوم</span>
+          </h1>
+          <p className="mt-3 text-lg text-fog">من غير أسئلة معقدة — حقك محفوظ، وبس.</p>
         </div>
-      </section>
 
-      <section className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 space-y-8">
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">فترة الاسترجاع</h2>
-              <p className="text-gray-600 mb-4">
-                يمكنك استرجاع المنتجات خلال 14 يوماً من تاريخ الاستلام، بشرط أن تكون المنتجات في حالتها الأصلية غير مستخدمة.
-              </p>
+        {/* الخطوات */}
+        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <div key={s.n} className="card relative p-5">
+              <span className="absolute -top-3 right-4 grid h-8 w-8 place-items-center rounded-lg bg-neon font-display text-sm font-black text-ink">
+                {s.n}
+              </span>
+              <h2 className="mt-2 font-display font-black text-snow">{s.t}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-fog">{s.d}</p>
+              {i < STEPS.length - 1 && (
+                <span className="absolute -left-2 top-1/2 hidden text-line sm:block" aria-hidden="true">
+                  ←
+                </span>
+              )}
             </div>
+          ))}
+        </div>
 
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">شروط الاسترجاع</h2>
-              <ul className="space-y-2 text-gray-600">
-                <li>• المنتج يجب أن يكون في حالته الأصلية مع جميع الملحقات</li>
-                <li>• العلامة التجارية والتغليف يجب أن تكون سليمة</li>
-                <li>• يرجى تقديم إيصال الشراء الأصلي</li>
-                <li>• المنتجات الشخصية (مثل السماعات الداخلية) لا يتم استرجاعها لأسباب صحية</li>
-              </ul>
-            </div>
+        {/* الشروط */}
+        <div className="card mt-6 p-6">
+          <h2 className="font-display text-lg font-black text-snow">شروط بسيطة ومفهومة</h2>
+          <ul className="mt-4 space-y-3">
+            {CONDITIONS.map((c) => (
+              <li key={c} className="flex items-start gap-2.5 text-sm text-snow">
+                <CheckCircleIcon size={18} className="mt-0.5 shrink-0 text-mint" />
+                {c}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">كيفية طلب الاسترجاع</h2>
-              <ol className="space-y-2 text-gray-600 list-decimal list-inside">
-                <li>تواصل مع خدمة العملاء عبر الهاتف أو البريد الإلكتروني</li>
-                <li>قدم رقم الطلب وسبب الاسترجاع</li>
-                <li>سيتم مراجعة الطلب خلال 24 ساعة</li>
-                <li>سيتم ترتيب استلام المنتج من عندك</li>
-                <li>سيتم إرجاع المبلغ خلال 5-7 أيام عمل</li>
-              </ol>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">الاستبدال</h2>
-              <p className="text-gray-600 mb-4">
-                يمكن استبدال المنتجات بنفس المنتج أو بمنتج آخر بنفس القيمة أو أعلى خلال 14 يوماً من الاستلام.
-              </p>
-            </div>
-
-            <div className="bg-blue-50 p-6 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">للاستفسار حول الاسترجاع</h3>
-              <p className="text-blue-700">
-                اتصل بنا على: 01000000000 أو راسلنا على: support@novastore.com
-              </p>
-            </div>
+        {/* دعوة للتواصل */}
+        <div className="card mt-6 flex flex-col items-center gap-4 p-8 text-center">
+          <TruckIcon size={36} className="text-neon" />
+          <h2 className="font-display text-xl font-black text-snow">
+            عندك مشكلة في طلب؟ خلّينا نحلها دلوقتي
+          </h2>
+          <p className="text-sm text-fog">
+            فريق الدعم متاح يومياً من 10 صباحاً لـ 12 منتصف الليل — وبنرد بسرعة.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <a
+              href="https://wa.me/201000000000"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-neon"
+            >
+              <WhatsAppIcon size={18} />
+              كلمنا واتساب
+            </a>
+            <Link href="/track" className="btn-ghost">
+              <TruckIcon size={18} />
+              تتبع طلبك
+            </Link>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

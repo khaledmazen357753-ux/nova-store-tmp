@@ -1,4 +1,0 @@
-User-Agent: *
-Allow: /
-
-Sitemap: https://khaledmazen357753-ux.github.io/nova-store-tmp/sitemap.xml
