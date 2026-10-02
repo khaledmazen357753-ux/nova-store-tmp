@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AXON ⚡ — Smart Accessories | متجر إكسسوارات الموبايل
 
-## Getting Started
+موقع إلكتروني متكامل لإكسسوارات الموبايل موجه للشباب (جيمنج، أناقة، متانة).
+مبني على Next.js 15 + Tailwind CSS 4 — عربي RTL بالكامل، Dark Mode + سيان كهربائي.
+الهوية مستخرجة بالكامل من الصورة المرجعية للبراند (`IMG-20260927-WA0014.jpg`).
 
-First, run the development server:
+## التشغيل محلياً
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## الهوية
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| العنصر | القيمة |
+|---|---|
+| الاسم | **AXON** — تاجلاين: **Smart Accessories** |
+| اللوجو | حرف **A** بيرسمه كابل شاحن ينتهي برأس توصيل + ووردمارك AXON |
+| الخلفية | `#202428` (رمادي داكن مزرق — سليت) |
+| الأسطح | `#2a3037` / `#353d44` / `#3a434b` |
+| الحدود | `#454e58` |
+| الأكسنت الأساسي | `#06e2fa` (سيان كهربائي) |
+| الثانوي | `#2baac6` (تيل مساند — للبكدجات والنجاح) |
+| النص الأساسي | `#e9edf1` (فضي بارد) · النص الخافت `#8a939c` |
+| الخطوط | Cairo (عناوين) + Tajawal (نصوص) — self-hosted عبر Fontsource |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## الصفحات
 
-## Learn More
+| المسار | الوصف |
+|---|---|
+| `/` | الرئيسية: هيرو، محدد الجهاز، تصنيفات، ترند، بكدجات، ريلز، تقييمات بالصور |
+| `/products` | المنتجات + فلاتر (تصنيف / ترند / توافق الجهاز) |
+| `/product/[id]` | تفاصيل المنتج + «أكمل الإكسسوار» + تقييمات |
+| `/cart` | السلة + شريط التقدم للشحن المجاني (1000 EGP) + كوبونات |
+| `/checkout` | طلب بصفحة واحدة (اسم، موبايل، محافظة، عنوان) + COD/أونلاين |
+| `/track` | تتبع الطلب برقمه (للتجربة: `AXN-1024`) |
+| `/returns` | سياسة الاستبدال خلال 14 يوم |
 
-To learn more about Next.js, take a look at the following resources:
+## المميزات التفاعلية
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **عجلة الحظ** — خصم 5-20% (أكواد `AXON5`–`AXON20`) أو شحن مجاني (`FREESHIP`) مقابل رقم/إيميل
+- **محدد طراز الهاتف** — فلترة المنتجات المتوافقة مع الجهاز بالظبط
+- **شريط الشحن المجاني** — «أضف بقيمة X للاستمتاع بالشحن المجاني»
+- **أكمل الإكسسوار** — Cross-selling تحت صفحة كل منتج
+- **سلة وطلبات** — محفوظة في localStorage (بدون backend للعرض) — أرقام الطلبات بصيغة `AXN-XXXX`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## النشر
 
-## Deploy on Vercel
+كل خطوات النشر (Vercel / GitHub Pages / Google Search Console) في **[DEPLOY.md](./DEPLOY.md)**.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ملاحظات
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- البيانات (منتجات/طلبات/تقييمات) تجريبية في `app/lib/products.ts` — جاهزة للربط بـ API حقيقي.
+- الأيقونات بستايل Iconsax (Rounded/Linear) — inline SVG في `app/components/icons.tsx`.
+- نظام التصميم والمراجع الكاملة: `DESIGN_REFERENCE.md`.
