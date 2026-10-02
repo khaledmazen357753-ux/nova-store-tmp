@@ -302,7 +302,7 @@ export const TikTokIcon = ({ size = 24, ...p }: IconProps) => (
   </Fill>
 );
 
-/** علامة AXON — حرف A بيكسمه كابل شاحن، والكابل بينتهي برأس توصيل كبير وواضح (زي اللوجو الأصلي) */
+/** علامة AXON — حرف A بسيط ونظيف بالسيان */
 export const AxonMarkIcon = ({ size = 24, ...p }: IconProps) => (
   <svg
     width={size}
@@ -312,34 +312,17 @@ export const AxonMarkIcon = ({ size = 24, ...p }: IconProps) => (
     aria-hidden="true"
     {...p}
   >
-    {/* القمة والساقان — شكل حرف A */}
     <path
-      d="M5.7 19.8 11.2 3.8l5 12.8"
+      d="M5.2 20 12 3.8 18.8 20"
       stroke="currentColor"
-      strokeWidth="2.6"
+      strokeWidth="2.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    {/* العارضة */}
     <path
-      d="M8.3 14.9h5.4"
+      d="M8.4 14.7h7.2"
       stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-    />
-    {/* الكابل بيكمل من الساق اليمنى لتحت */}
-    <path
-      d="M16.2 16.6c1.8.4 2.8 1.3 2.9 2.9"
-      stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-    />
-    {/* رأس التوصيل — كبير وواضح */}
-    <rect x="17.4" y="16.4" width="4.4" height="5.8" rx="1.5" fill="currentColor" />
-    <path
-      d="M19.6 22.2v.8"
-      stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="2.8"
       strokeLinecap="round"
     />
   </svg>
