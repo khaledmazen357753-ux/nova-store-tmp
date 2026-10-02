@@ -62,8 +62,8 @@ export default function Navigation() {
         <nav className="border-b border-line bg-ink/85 backdrop-blur-md">
           <div className="container-x flex h-16 items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-2.5" aria-label="AXON — الرئيسية">
-              <span className="cyan-glow grid h-9 w-9 place-items-center rounded-xl bg-cyan text-ink">
-                <AxonMarkIcon size={20} />
+              <span className="cyan-glow grid h-10 w-10 place-items-center rounded-xl bg-cyan text-ink">
+                <AxonMarkIcon size={23} />
               </span>
               <span className="leading-none">
                 <span className="font-display text-xl font-black tracking-[0.2em] text-snow">AXON</span>

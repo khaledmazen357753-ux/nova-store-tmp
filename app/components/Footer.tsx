@@ -17,8 +17,8 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <Link href="/" className="flex items-center gap-2.5" aria-label="AXON — الرئيسية">
-              <span className="grid h-9 w-9 place-items-center rounded-xl border border-cyan/30 bg-panel-2 text-cyan">
-                <AxonMarkIcon size={20} />
+              <span className="grid h-10 w-10 place-items-center rounded-xl border border-cyan/30 bg-panel-2 text-cyan">
+                <AxonMarkIcon size={23} />
               </span>
               <span className="leading-none">
                 <span className="font-display text-xl font-black tracking-[0.2em] text-snow">AXON</span>
