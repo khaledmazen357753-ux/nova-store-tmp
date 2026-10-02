@@ -15,8 +15,8 @@ import { SITE_URL } from "./lib/site";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "VOLT | إكسسوارات موبايل — حماية، طاقة، صوت",
-    template: "%s | VOLT",
+    default: "AXON | إكسسوارات موبايل — حماية، طاقة، صوت",
+    template: "%s | AXON",
   },
   description:
     "جهّز موبايلك لأقصى أداء.. حماية، أناقة، وسرعة بلا حدود! إكسسوارات موبايل للشباب: جرابات مضادة للصدمات، شواحن GaN سريعة، إكسسوارات جيمنج، سماعات TWS وحوامل. دفع عند الاستلام واستبدال فوري خلال 14 يوماً.",
@@ -28,14 +28,14 @@ export const metadata: Metadata = {
     "باور بانك",
     "إكسسوارات جيمنج",
     "سماعات بلوتوث",
-    "VOLT",
-    "فولت",
+    "AXON",
+    "أكسون",
   ],
   openGraph: {
     type: "website",
     locale: "ar_EG",
-    siteName: "VOLT",
-    title: "VOLT | جهّز موبايلك لأقصى أداء",
+    siteName: "AXON",
+    title: "AXON | Smart Accessories — جهّز موبايلك لأقصى أداء",
     description: "حماية، أناقة، وسرعة بلا حدود — إكسسوارات موبايل للشباب. دفع عند الاستلام واستبدال فوري.",
     url: SITE_URL,
   },
@@ -48,8 +48,9 @@ export const metadata: Metadata = {
 const storeJsonLd = {
   "@context": "https://schema.org",
   "@type": "OnlineStore",
-  name: "VOLT",
-  alternateName: "فولت — إكسسوارات موبايل",
+  name: "AXON",
+  alternateName: "أكسون — Smart Accessories",
+  slogan: "Smart Accessories",
   description:
     "متجر إكسسوارات الموبايل للشباب — حمايات وشواحن سريعة وإكسسوارات جيمنج وصوتيات وحوامل. دفع عند الاستلام واستبدال خلال 14 يوماً.",
   url: SITE_URL,
@@ -63,14 +64,14 @@ const storeJsonLd = {
     "@type": "ContactPoint",
     contactType: "customer support",
     telephone: "+20-100-000-0000",
-    email: "hello@voltstore.eg",
+    email: "hello@axonstore.eg",
     availableLanguage: ["ar", "en"],
   },
   sameAs: ["https://instagram.com", "https://tiktok.com"],
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a10",
+  themeColor: "#202428",
   width: "device-width",
   initialScale: 1,
 };

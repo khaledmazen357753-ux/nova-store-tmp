@@ -42,13 +42,13 @@ export default function Reviews({ title = "الناس بتقول إيه؟" }: { 
           {REVIEWS.map((r, i) => (
             <div key={i} className="card flex flex-col p-5">
               <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-neon/15 font-display text-lg font-black text-neon">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-cyan/15 font-display text-lg font-black text-cyan">
                   {r.initial}
                 </span>
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-snow">{r.name}</span>
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-mint">
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-teal">
                       <CheckCircleIcon size={13} />
                       مشتري موثّق
                     </span>
@@ -58,7 +58,7 @@ export default function Reviews({ title = "الناس بتقول إيه؟" }: { 
                       <StarIcon
                         key={s}
                         size={13}
-                        className={s < r.rating ? "text-neon" : "text-line"}
+                        className={s < r.rating ? "text-cyan" : "text-line"}
                       />
                     ))}
                   </div>
@@ -72,7 +72,7 @@ export default function Reviews({ title = "الناس بتقول إيه؟" }: { 
                   <Image src={r.photo} alt={`صورة العميل لـ ${r.product}`} fill sizes="56px" className="object-cover" />
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-fog">
-                  <CameraIcon size={15} className="text-neon" />
+                  <CameraIcon size={15} className="text-cyan" />
                   صورة حقيقية بعد الاستلام — {r.product}
                 </span>
               </div>

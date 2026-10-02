@@ -38,7 +38,7 @@ export default function ProductsGrid() {
           {trendingOnly ? "الترند دلوقتي" : "كل المنتجات"}
         </h1>
         {trendingOnly && (
-          <span className="chip border-neon/30 bg-neon/10 text-neon">
+          <span className="chip border-cyan/30 bg-cyan/10 text-cyan">
             <FireIcon size={14} />
             الأعلى طلباً
           </span>
@@ -47,7 +47,7 @@ export default function ProductsGrid() {
         {trendingOnly && (
           <Link
             href="/products"
-            className="mr-auto flex items-center gap-1 text-xs font-bold text-fog transition-colors hover:text-neon"
+            className="mr-auto flex items-center gap-1 text-xs font-bold text-fog transition-colors hover:text-cyan"
           >
             <XIcon size={13} />
             شيل فلتر الترند
@@ -57,10 +57,10 @@ export default function ProductsGrid() {
 
       {/* بانر فلتر الجهاز */}
       {deviceFilter && device && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-mint/30 bg-mint/5 p-4">
-          <PhoneIcon size={18} className="text-mint" />
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-teal/30 bg-teal/5 p-4">
+          <PhoneIcon size={18} className="text-teal" />
           <span className="text-sm text-snow">
-            بنعرضلك المتوافق مع <b className="text-mint">{device}</b> بس
+            بنعرضلك المتوافق مع <b className="text-teal">{device}</b> بس
           </span>
           <button
             onClick={() => setDevice(null)}
@@ -73,7 +73,7 @@ export default function ProductsGrid() {
       {deviceFilter && !device && (
         <div className="mt-4 rounded-2xl border border-line bg-panel p-4 text-sm text-fog">
           اختار موبايلك الأول من{" "}
-          <Link href="/#device-finder" className="font-bold text-neon hover:underline">
+          <Link href="/#device-finder" className="font-bold text-cyan hover:underline">
             محدد طراز الهاتف
           </Link>{" "}
           عشان نفلترلك المتوافق — أو تصفح كل المنتجات تحت.
@@ -86,8 +86,8 @@ export default function ProductsGrid() {
           onClick={() => setCat("all")}
           className={`min-h-11 shrink-0 rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${
             cat === "all"
-              ? "border-neon bg-neon text-ink"
-              : "border-line bg-panel text-fog hover:border-neon/40 hover:text-snow"
+              ? "border-cyan bg-cyan text-ink"
+              : "border-line bg-panel text-fog hover:border-cyan/40 hover:text-snow"
           }`}
         >
           الكل
@@ -98,8 +98,8 @@ export default function ProductsGrid() {
             onClick={() => setCat(c.key)}
             className={`min-h-11 shrink-0 rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${
               cat === c.key
-                ? "border-neon bg-neon text-ink"
-                : "border-line bg-panel text-fog hover:border-neon/40 hover:text-snow"
+                ? "border-cyan bg-cyan text-ink"
+                : "border-line bg-panel text-fog hover:border-cyan/40 hover:text-snow"
             }`}
           >
             {c.name}
@@ -129,7 +129,7 @@ export default function ProductsGrid() {
                 امسح فلتر الجهاز
               </button>
             )}
-            <Link href="/products" className="btn-neon">
+            <Link href="/products" className="btn-cyan">
               شوف كل المنتجات
             </Link>
           </div>

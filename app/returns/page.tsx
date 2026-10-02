@@ -10,7 +10,7 @@ import {
 export const metadata: Metadata = {
   title: "الاستبدال والاسترجاع",
   description:
-    "استبدال أو استرجاع خلال 14 يوماً بدون أسئلة معقدة — سياسة VOLT الواضحة والبسيطة.",
+    "استبدال أو استرجاع خلال 14 يوماً بدون أسئلة معقدة — سياسة AXON الواضحة والبسيطة.",
 };
 
 const STEPS = [
@@ -43,11 +43,11 @@ export default function ReturnsPage() {
     <div className="container-x py-12">
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-neon/10 text-neon">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-cyan/10 text-cyan">
             <RefreshIcon size={30} />
           </span>
           <h1 className="mt-5 font-display text-3xl font-black text-snow sm:text-4xl">
-            استبدال واسترجاع خلال <span className="text-glow text-neon">14 يوم</span>
+            استبدال واسترجاع خلال <span className="text-glow text-cyan">14 يوم</span>
           </h1>
           <p className="mt-3 text-lg text-fog">من غير أسئلة معقدة — حقك محفوظ، وبس.</p>
         </div>
@@ -56,7 +56,7 @@ export default function ReturnsPage() {
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {STEPS.map((s, i) => (
             <div key={s.n} className="card relative p-5">
-              <span className="absolute -top-3 right-4 grid h-8 w-8 place-items-center rounded-lg bg-neon font-display text-sm font-black text-ink">
+              <span className="absolute -top-3 right-4 grid h-8 w-8 place-items-center rounded-lg bg-cyan font-display text-sm font-black text-ink">
                 {s.n}
               </span>
               <h2 className="mt-2 font-display font-black text-snow">{s.t}</h2>
@@ -76,7 +76,7 @@ export default function ReturnsPage() {
           <ul className="mt-4 space-y-3">
             {CONDITIONS.map((c) => (
               <li key={c} className="flex items-start gap-2.5 text-sm text-snow">
-                <CheckCircleIcon size={18} className="mt-0.5 shrink-0 text-mint" />
+                <CheckCircleIcon size={18} className="mt-0.5 shrink-0 text-teal" />
                 {c}
               </li>
             ))}
@@ -85,7 +85,7 @@ export default function ReturnsPage() {
 
         {/* دعوة للتواصل */}
         <div className="card mt-6 flex flex-col items-center gap-4 p-8 text-center">
-          <TruckIcon size={36} className="text-neon" />
+          <TruckIcon size={36} className="text-cyan" />
           <h2 className="font-display text-xl font-black text-snow">
             عندك مشكلة في طلب؟ خلّينا نحلها دلوقتي
           </h2>
@@ -97,7 +97,7 @@ export default function ReturnsPage() {
               href="https://wa.me/201000000000"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-neon"
+              className="btn-cyan"
             >
               <WhatsAppIcon size={18} />
               كلمنا واتساب

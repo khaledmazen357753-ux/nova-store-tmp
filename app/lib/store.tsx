@@ -25,10 +25,10 @@ export type Order = {
 type CouponDef = { type: "percent" | "ship"; value: number; label: string };
 
 export const COUPONS: Record<string, CouponDef> = {
-  VOLT5: { type: "percent", value: 5, label: "خصم 5%" },
-  VOLT10: { type: "percent", value: 10, label: "خصم 10%" },
-  VOLT15: { type: "percent", value: 15, label: "خصم 15%" },
-  VOLT20: { type: "percent", value: 20, label: "خصم 20%" },
+  AXON5: { type: "percent", value: 5, label: "خصم 5%" },
+  AXON10: { type: "percent", value: 10, label: "خصم 10%" },
+  AXON15: { type: "percent", value: 15, label: "خصم 15%" },
+  AXON20: { type: "percent", value: 20, label: "خصم 20%" },
   FREESHIP: { type: "ship", value: 0, label: "شحن مجاني" },
 };
 
@@ -72,7 +72,7 @@ function read<T>(key: string, fallback: T): T {
 }
 
 const DEMO_ORDER: Order = {
-  no: "VLT-1024",
+  no: "AXN-1024",
   date: Date.now() - 2 * 24 * 3600 * 1000,
   items: [{ id: 9, qty: 1 }],
   total: 799,
@@ -92,26 +92,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setCart(read("volt_cart", []));
-    setDeviceState(read("volt_device", null));
-    setCoupon(read("volt_coupon", null));
-    let os = read<Order[]>("volt_orders", []);
-    if (!localStorage.getItem("volt_orders")) {
+    setCart(read("axon_cart", []));
+    setDeviceState(read("axon_device", null));
+    setCoupon(read("axon_coupon", null));
+    let os = read<Order[]>("axon_orders", []);
+    if (!localStorage.getItem("axon_orders")) {
       os = [DEMO_ORDER];
-      localStorage.setItem("volt_orders", JSON.stringify(os));
+      localStorage.setItem("axon_orders", JSON.stringify(os));
     }
     setOrders(os);
     setReady(true);
   }, []);
 
   useEffect(() => {
-    if (ready) localStorage.setItem("volt_cart", JSON.stringify(cart));
+    if (ready) localStorage.setItem("axon_cart", JSON.stringify(cart));
   }, [cart, ready]);
   useEffect(() => {
-    if (ready) localStorage.setItem("volt_device", JSON.stringify(device));
+    if (ready) localStorage.setItem("axon_device", JSON.stringify(device));
   }, [device, ready]);
   useEffect(() => {
-    if (ready) localStorage.setItem("volt_coupon", JSON.stringify(coupon));
+    if (ready) localStorage.setItem("axon_coupon", JSON.stringify(coupon));
   }, [coupon, ready]);
 
   const setDevice = (d: string | null) => setDeviceState(d);
@@ -167,11 +167,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const removeCoupon = () => setCoupon(null);
 
   const placeOrder: Store["placeOrder"] = (info) => {
-    const no = `VLT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const no = `AXN-${Math.floor(1000 + Math.random() * 9000)}`;
     const order: Order = { ...info, no, date: Date.now(), items: cart, total, status: 1 };
     setOrders((o) => {
       const n = [...o, order];
-      localStorage.setItem("volt_orders", JSON.stringify(n));
+      localStorage.setItem("axon_orders", JSON.stringify(n));
       return n;
     });
     setCart([]);

@@ -46,18 +46,18 @@ export default function Home() {
       {/* ===== Hero ===== */}
       <section className="relative overflow-hidden border-b border-line">
         <div className="bg-dots absolute inset-0" />
-        <div className="absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-violet/20 blur-3xl" />
-        <div className="absolute -bottom-32 right-0 h-80 w-80 rounded-full bg-neon/10 blur-3xl" />
+        <div className="absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-teal/20 blur-3xl" />
+        <div className="absolute -bottom-32 right-0 h-80 w-80 rounded-full bg-cyan/10 blur-3xl" />
 
         <div className="container-x relative grid items-center gap-10 py-14 md:grid-cols-2 md:py-20">
           <div>
-            <span className="chip border-neon/30 bg-neon/10 text-neon">
+            <span className="chip border-cyan/30 bg-cyan/10 text-cyan">
               <FireIcon size={14} />
               جديد كل أسبوع — الترند قبل الكل
             </span>
             <h1 className="mt-5 font-display text-4xl font-black leading-[1.15] text-snow sm:text-5xl lg:text-6xl">
               جهّز موبايلك لأقصى أداء..
-              <span className="text-glow mt-2 block bg-gradient-to-l from-neon via-neon to-violet bg-clip-text text-transparent">
+              <span className="text-glow mt-2 block bg-gradient-to-l from-cyan via-cyan to-teal bg-clip-text text-transparent">
                 حماية، أناقة، وسرعة بلا حدود!
               </span>
             </h1>
@@ -67,54 +67,54 @@ export default function Home() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/products" className="btn-neon animate-pulse-glow font-display text-lg">
+              <Link href="/products" className="btn-cyan animate-pulse-glow font-display text-lg">
                 اطلب الآن، وعيش التجربة
                 <ArrowLeftIcon size={18} />
               </Link>
               <Link href="/#device-finder" className="btn-ghost">
-                <BoltIcon size={18} className="text-neon" />
+                <BoltIcon size={18} className="text-cyan" />
                 اختار موبايلك
               </Link>
             </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-3 text-sm text-fog">
               <span className="flex items-center gap-2">
-                <StarIcon size={16} className="text-neon" />
+                <StarIcon size={16} className="text-cyan" />
                 <b className="text-snow">4.9</b> (+12 ألف تقييم)
               </span>
               <span className="flex items-center gap-2">
-                <TruckIcon size={17} className="text-neon" />
+                <TruckIcon size={17} className="text-cyan" />
                 توصيل 24-48 ساعة
               </span>
               <span className="flex items-center gap-2">
-                <RefreshIcon size={17} className="text-neon" />
+                <RefreshIcon size={17} className="text-cyan" />
                 استبدال فوري 14 يوم
               </span>
             </div>
           </div>
 
           <div className="relative mx-auto w-full max-w-md">
-            <div className="absolute inset-8 rounded-full bg-neon/15 blur-3xl" />
-            <div className="animate-floaty relative overflow-hidden rounded-3xl border border-line shadow-[0_20px_80px_rgba(212,255,63,0.1)]">
+            <div className="absolute inset-8 rounded-full bg-cyan/15 blur-3xl" />
+            <div className="animate-floaty relative overflow-hidden rounded-3xl border border-line shadow-[0_20px_80px_rgba(6,226,250,0.1)]">
               <Image
                 src="/products/hero.jpg"
-                alt="موبايل بإكسسوارات VOLT — جراب مضاد للصدمات وسماعات لاسلكية وشاحن سريع"
+                alt="موبايل بإكسسوارات AXON — جراب مضاد للصدمات وسماعات لاسلكية وشاحن سريع"
                 width={1024}
                 height={1024}
                 priority
                 className="h-auto w-full"
               />
             </div>
-            <span className="chip animate-floaty absolute right-0 top-6 border-neon/40 bg-ink/85 backdrop-blur" style={{ animationDelay: "0.8s" }}>
-              <BoltIcon size={14} className="text-neon" />
+            <span className="chip animate-floaty absolute right-0 top-6 border-cyan/40 bg-ink/85 backdrop-blur" style={{ animationDelay: "0.8s" }}>
+              <BoltIcon size={14} className="text-cyan" />
               شحن 45W
             </span>
-            <span className="chip animate-floaty absolute bottom-10 right-2 border-violet/40 bg-ink/85 backdrop-blur" style={{ animationDelay: "1.6s" }}>
-              <HeadphonesIcon size={14} className="text-violet" />
+            <span className="chip animate-floaty absolute bottom-10 right-2 border-teal/40 bg-ink/85 backdrop-blur" style={{ animationDelay: "1.6s" }}>
+              <HeadphonesIcon size={14} className="text-teal" />
               ANC -35dB
             </span>
-            <span className="chip animate-floaty absolute bottom-24 left-0 border-mint/40 bg-ink/85 backdrop-blur" style={{ animationDelay: "2.2s" }}>
-              <ShieldCheckIcon size={14} className="text-mint" />
+            <span className="chip animate-floaty absolute bottom-24 left-0 border-teal/40 bg-ink/85 backdrop-blur" style={{ animationDelay: "2.2s" }}>
+              <ShieldCheckIcon size={14} className="text-teal" />
               حماية 9H
             </span>
           </div>
@@ -131,7 +131,7 @@ export default function Home() {
             { Icon: WhatsAppIcon, t: "دعم واتساب سريع", d: "بنرد عليك في دقايق" },
           ].map(({ Icon, t, d }) => (
             <div key={t} className="flex items-center gap-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-neon/10 text-neon">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan/10 text-cyan">
                 <Icon size={22} />
               </span>
               <div>
@@ -157,7 +157,7 @@ export default function Home() {
               </div>
               <Link
                 href="/products"
-                className="flex items-center gap-1.5 text-sm font-bold text-neon transition-colors hover:brightness-110"
+                className="flex items-center gap-1.5 text-sm font-bold text-cyan transition-colors hover:brightness-110"
               >
                 كل المنتجات
                 <ArrowLeftIcon size={16} />
@@ -172,9 +172,9 @@ export default function Home() {
                 <Reveal key={c.key} delay={i * 70}>
                   <Link
                     href={`/products?category=${c.key}`}
-                    className="card group flex h-full flex-col p-5 transition-all duration-300 hover:-translate-y-1 hover:border-neon/40 hover:shadow-[0_8px_40px_rgba(212,255,63,0.08)]"
+                    className="card group flex h-full flex-col p-5 transition-all duration-300 hover:-translate-y-1 hover:border-cyan/40 hover:shadow-[0_8px_40px_rgba(6,226,250,0.08)]"
                   >
-                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-neon/10 text-neon transition-colors group-hover:bg-neon group-hover:text-ink">
+                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-cyan/10 text-cyan transition-colors group-hover:bg-cyan group-hover:text-ink">
                       <Icon size={26} />
                     </span>
                     <h3 className="mt-4 font-display font-black text-snow">{c.name}</h3>
@@ -193,14 +193,14 @@ export default function Home() {
           <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="section-title flex items-center gap-2">
-                <FireIcon size={26} className="text-neon" />
+                <FireIcon size={26} className="text-cyan" />
                 الترند دلوقتي
               </h2>
               <p className="mt-2 text-fog">اللي الجيمرز والكونتنت كريتورز بيتجننوا عليه على تيك توك وإنستغرام</p>
             </div>
             <Link
               href="/products?tag=trending"
-              className="flex items-center gap-1.5 text-sm font-bold text-neon transition-colors hover:brightness-110"
+              className="flex items-center gap-1.5 text-sm font-bold text-cyan transition-colors hover:brightness-110"
             >
               شوف الترند كله
               <ArrowLeftIcon size={16} />
@@ -243,7 +243,7 @@ export default function Home() {
             <h2 className="section-title">الأكثر طلباً هذا الشهر</h2>
             <Link
               href="/products"
-              className="flex items-center gap-1.5 text-sm font-bold text-neon transition-colors hover:brightness-110"
+              className="flex items-center gap-1.5 text-sm font-bold text-cyan transition-colors hover:brightness-110"
             >
               كل المنتجات
               <ArrowLeftIcon size={16} />
@@ -279,7 +279,7 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-transparent" />
                   <span className="absolute inset-0 grid place-items-center">
-                    <span className="grid h-14 w-14 place-items-center rounded-full bg-neon/90 text-ink shadow-[0_0_30px_rgba(212,255,63,.5)] transition-transform group-hover:scale-110">
+                    <span className="grid h-14 w-14 place-items-center rounded-full bg-cyan/90 text-ink shadow-[0_0_30px_rgba(6,226,250,.5)] transition-transform group-hover:scale-110">
                       <PlayIcon size={22} />
                     </span>
                   </span>
@@ -289,7 +289,7 @@ export default function Home() {
                   <div className="absolute inset-x-0 bottom-0 p-3">
                     <p className="text-sm font-bold leading-snug text-snow">{r.caption}</p>
                     <p className="mt-1 flex items-center gap-1 text-[11px] text-fog">
-                      <FireIcon size={11} className="text-neon" />
+                      <FireIcon size={11} className="text-cyan" />
                       {r.views} مشاهدة على تيك توك
                     </p>
                   </div>
@@ -310,17 +310,17 @@ export default function Home() {
         <div className="container-x">
           <Reveal>
             <div className="bg-dots card relative overflow-hidden p-8 text-center sm:p-12">
-              <div className="absolute -top-20 right-1/4 h-48 w-48 rounded-full bg-neon/15 blur-3xl" />
-              <div className="absolute -bottom-24 left-1/4 h-48 w-48 rounded-full bg-violet/20 blur-3xl" />
+              <div className="absolute -top-20 right-1/4 h-48 w-48 rounded-full bg-cyan/15 blur-3xl" />
+              <div className="absolute -bottom-24 left-1/4 h-48 w-48 rounded-full bg-teal/20 blur-3xl" />
               <div className="relative">
                 <h2 className="font-display text-3xl font-black text-snow sm:text-4xl">
-                  موبايلك يستاهل <span className="text-glow text-neon">الأحسن.</span>
+                  موبايلك يستاهل <span className="text-glow text-cyan">الأحسن.</span>
                 </h2>
                 <p className="mx-auto mt-3 max-w-lg text-fog">
                   اطلب النهاردة — الدفع عند الاستلام، والتوصيل خلال 48 ساعة، والاستبدال فوري لو
                   أي حاجة مش عجباتك.
                 </p>
-                <Link href="/products" className="btn-neon animate-pulse-glow mt-7 font-display text-lg">
+                <Link href="/products" className="btn-cyan animate-pulse-glow mt-7 font-display text-lg">
                   اطلب الآن، وعيش التجربة
                   <ArrowLeftIcon size={18} />
                 </Link>

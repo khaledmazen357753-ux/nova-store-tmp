@@ -301,3 +301,23 @@ export const TikTokIcon = ({ size = 24, ...p }: IconProps) => (
     <path d="M16.6 3c.4 2.3 1.8 3.7 4.4 3.9V10c-1.6 0-3.1-.5-4.4-1.3v6.6a6.3 6.3 0 1 1-6.3-6.3c.33 0 .66.02 1 .08v3.3a3.2 3.2 0 1 0 2.2 3V3h3.1Z" />
   </Fill>
 );
+
+/** علامة AXON — X هندسية من خطين متقاطعين (مستوحاة من اللوجو الأصلي: الخط المكسور يمر من تحت) */
+export const AxonMarkIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+    {...p}
+  >
+    <g transform="rotate(45 12 12)">
+      <rect x="9.2" y="1.6" width="5.6" height="9.2" rx="0.7" />
+      <rect x="9.2" y="13.2" width="5.6" height="9.2" rx="0.7" />
+    </g>
+    <g transform="rotate(-45 12 12)">
+      <rect x="9.2" y="1.6" width="5.6" height="20.8" rx="0.7" />
+    </g>
+  </svg>
+);

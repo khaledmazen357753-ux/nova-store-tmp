@@ -26,7 +26,7 @@ export default function TrackPage() {
     <div className="container-x py-10">
       <div className="mx-auto max-w-2xl">
         <div className="text-center">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-neon/10 text-neon">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-cyan/10 text-cyan">
             <TruckIcon size={26} />
           </span>
           <h1 className="mt-4 font-display text-2xl font-black text-snow sm:text-3xl">تتبع طلبك</h1>
@@ -43,11 +43,11 @@ export default function TrackPage() {
               value={no}
               onChange={(e) => setNo(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && search()}
-              placeholder="مثال: VLT-1024"
+              placeholder="مثال: AXN-1024"
               dir="ltr"
               className="input text-left"
             />
-            <button onClick={search} className="btn-neon shrink-0">
+            <button onClick={search} className="btn-cyan shrink-0">
               <SearchIcon size={18} />
               تتبع
             </button>
@@ -61,7 +61,7 @@ export default function TrackPage() {
                 اتأكد من الرقم اللي وصلك بعد التأكيد — أو كلمنا واتساب وهنساعدك فوراً.
               </p>
               <p className="mt-2 text-xs text-fog">
-                (للتجربة: جرب الرقم <b className="text-neon">VLT-1024</b>)
+                (للتجربة: جرب الرقم <b className="text-cyan">AXN-1024</b>)
               </p>
               <a
                 href="https://wa.me/201000000000"
@@ -81,11 +81,11 @@ export default function TrackPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <span className="text-xs text-fog">طلب رقم</span>
-                <div className="font-display text-xl font-black text-neon" dir="ltr">
+                <div className="font-display text-xl font-black text-cyan" dir="ltr">
                   {order.no}
                 </div>
               </div>
-              <span className="chip border-mint/30 bg-mint/10 text-mint">
+              <span className="chip border-teal/30 bg-teal/10 text-teal">
                 <CheckCircleIcon size={14} />
                 {STEPS[Math.min(order.status, STEPS.length - 1)]}
               </span>
@@ -101,9 +101,9 @@ export default function TrackPage() {
                       <span
                         className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 ${
                           done
-                            ? "border-mint bg-mint/15 text-mint"
+                            ? "border-teal bg-teal/15 text-teal"
                             : current
-                              ? "animate-pulse-glow border-neon bg-neon/15 text-neon"
+                              ? "animate-pulse-glow border-cyan bg-cyan/15 text-cyan"
                               : "border-line bg-panel-2 text-fog"
                         }`}
                       >
@@ -117,7 +117,7 @@ export default function TrackPage() {
                       </span>
                       {i < STEPS.length - 1 && (
                         <span
-                          className={`h-8 w-0.5 ${i < order.status ? "bg-mint/50" : "bg-line"}`}
+                          className={`h-8 w-0.5 ${i < order.status ? "bg-teal/50" : "bg-line"}`}
                           aria-hidden="true"
                         />
                       )}

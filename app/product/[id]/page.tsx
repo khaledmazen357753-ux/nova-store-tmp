@@ -34,7 +34,7 @@ export async function generateMetadata({
   if (!p) return {};
   return {
     title: p.name,
-    description: `${p.desc} — EGP ${p.price} من VOLT. دفع عند الاستلام واستبدال خلال 14 يوم.`,
+    description: `${p.desc} — EGP ${p.price} من AXON. دفع عند الاستلام واستبدال خلال 14 يوم.`,
   };
 }
 
@@ -60,8 +60,8 @@ export default async function ProductPage({
     name: product.name,
     description: product.desc,
     image: [`${siteUrl}${product.img ?? "/products/hero.jpg"}`],
-    sku: `VOLT-${product.id}`,
-    brand: { "@type": "Brand", name: "VOLT" },
+    sku: `AXON-${product.id}`,
+    brand: { "@type": "Brand", name: "AXON" },
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: product.rating,
@@ -81,15 +81,15 @@ export default async function ProductPage({
       <JsonLd data={productJsonLd} />
       {/* المسار */}
       <nav aria-label="مسار التنقل" className="flex flex-wrap items-center gap-1.5 text-xs text-fog">
-        <Link href="/" className="transition-colors hover:text-neon">
+        <Link href="/" className="transition-colors hover:text-cyan">
           الرئيسية
         </Link>
         <span>/</span>
-        <Link href="/products" className="transition-colors hover:text-neon">
+        <Link href="/products" className="transition-colors hover:text-cyan">
           المنتجات
         </Link>
         <span>/</span>
-        <Link href={`/products?category=${product.category}`} className="transition-colors hover:text-neon">
+        <Link href={`/products?category=${product.category}`} className="transition-colors hover:text-cyan">
           {categoryName}
         </Link>
         <span>/</span>
@@ -119,7 +119,7 @@ export default async function ProductPage({
             </span>
           )}
           {product.trending && (
-            <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-xl bg-ink/85 px-3 py-1.5 text-sm font-black text-neon backdrop-blur">
+            <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-xl bg-ink/85 px-3 py-1.5 text-sm font-black text-cyan backdrop-blur">
               <FireIcon size={15} />
               ترند تيك توك
             </span>
@@ -131,7 +131,7 @@ export default async function ProductPage({
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">{categoryName}</span>
             {product.trending && (
-              <span className="chip border-neon/30 bg-neon/10 text-neon">
+              <span className="chip border-cyan/30 bg-cyan/10 text-cyan">
                 <FireIcon size={13} />
                 ترند
               </span>
@@ -148,7 +148,7 @@ export default async function ProductPage({
                 <StarIcon
                   key={i}
                   size={16}
-                  className={i < Math.round(product.rating) ? "text-neon" : "text-line"}
+                  className={i < Math.round(product.rating) ? "text-cyan" : "text-line"}
                 />
               ))}
             </div>
@@ -158,11 +158,11 @@ export default async function ProductPage({
           </div>
 
           <div className="mt-5 flex flex-wrap items-end gap-3">
-            <span className="font-display text-4xl font-black text-neon">EGP {product.price}</span>
+            <span className="font-display text-4xl font-black text-cyan">EGP {product.price}</span>
             {product.oldPrice && (
               <>
                 <span className="text-lg text-fog line-through">{product.oldPrice}</span>
-                <span className="rounded-lg bg-mint/15 px-2.5 py-1 text-sm font-bold text-mint">
+                <span className="rounded-lg bg-teal/15 px-2.5 py-1 text-sm font-bold text-teal">
                   وفّر EGP {product.oldPrice - product.price}
                 </span>
               </>
@@ -193,7 +193,7 @@ export default async function ProductPage({
           <ul className="mt-8 space-y-2.5">
             {product.features.map((f) => (
               <li key={f} className="flex items-start gap-2.5 text-sm text-snow">
-                <CheckCircleIcon size={18} className="mt-0.5 shrink-0 text-mint" />
+                <CheckCircleIcon size={18} className="mt-0.5 shrink-0 text-teal" />
                 {f}
               </li>
             ))}
@@ -202,15 +202,15 @@ export default async function ProductPage({
           {/* الثقة */}
           <div className="mt-8 grid grid-cols-3 gap-3 rounded-2xl border border-line bg-panel p-4 text-center">
             <div>
-              <TruckIcon size={22} className="mx-auto text-neon" />
+              <TruckIcon size={22} className="mx-auto text-cyan" />
               <div className="mt-1.5 text-xs font-bold text-snow">توصيل 24-48 ساعة</div>
             </div>
             <div>
-              <RefreshIcon size={22} className="mx-auto text-neon" />
+              <RefreshIcon size={22} className="mx-auto text-cyan" />
               <div className="mt-1.5 text-xs font-bold text-snow">استبدال 14 يوم</div>
             </div>
             <div>
-              <CashIcon size={22} className="mx-auto text-neon" />
+              <CashIcon size={22} className="mx-auto text-cyan" />
               <div className="mt-1.5 text-xs font-bold text-snow">دفع عند الاستلام</div>
             </div>
           </div>
@@ -232,7 +232,7 @@ export default async function ProductPage({
             <h2 className="section-title">زيه بس مختلف</h2>
             <Link
               href={`/products?category=${product.category}`}
-              className="flex items-center gap-1.5 text-sm font-bold text-neon hover:brightness-110"
+              className="flex items-center gap-1.5 text-sm font-bold text-cyan hover:brightness-110"
             >
               شوف القسم كله
               <ArrowLeftIcon size={16} />

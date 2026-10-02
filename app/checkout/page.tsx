@@ -55,7 +55,7 @@ export default function CheckoutPage() {
     return (
       <div className="container-x py-14">
         <div className="card mx-auto flex max-w-lg flex-col items-center p-10 text-center">
-          <CheckCircleIcon size={72} className="text-mint" />
+          <CheckCircleIcon size={72} className="text-teal" />
           <h1 className="mt-5 font-display text-3xl font-black text-snow">تم تأكيد طلبك!</h1>
           <p className="mt-3 leading-relaxed text-fog">
             طلبك رقم{" "}
@@ -65,7 +65,7 @@ export default function CheckoutPage() {
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1500);
               }}
-              className="rounded-lg bg-neon/10 px-2 py-1 font-black text-neon transition-colors hover:bg-neon/20"
+              className="rounded-lg bg-cyan/10 px-2 py-1 font-black text-cyan transition-colors hover:bg-cyan/20"
               aria-label={`انسخ رقم الطلب ${orderNo}`}
             >
               {orderNo}
@@ -76,7 +76,7 @@ export default function CheckoutPage() {
             {pay === "cod" ? "هتدفع EGP " + total + " كاش عند الاستلام" : "تم تسجيل طلبك للدفع الإلكتروني عند التأكيد"}
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link href="/track" className="btn-neon">
+            <Link href="/track" className="btn-cyan">
               <TruckIcon size={18} />
               تتبع طلبك
             </Link>
@@ -84,7 +84,7 @@ export default function CheckoutPage() {
               واصل التسوّق
             </Link>
           </div>
-          {copied && <p className="mt-3 text-xs text-mint">تم نسخ رقم الطلب</p>}
+          {copied && <p className="mt-3 text-xs text-teal">تم نسخ رقم الطلب</p>}
         </div>
       </div>
     );
@@ -98,7 +98,7 @@ export default function CheckoutPage() {
           <BagIcon size={52} className="text-fog" />
           <h1 className="mt-4 font-display text-2xl font-black text-snow">مفيش حاجة نطلبها لسه</h1>
           <p className="mt-2 text-fog">اختار منتجاتك الأول وبعدين تعالى هنا — هياخدوا منك دقيقة</p>
-          <Link href="/products" className="btn-neon mt-6">
+          <Link href="/products" className="btn-cyan mt-6">
             يلا نتسوّق
             <ArrowLeftIcon size={17} />
           </Link>
@@ -128,7 +128,7 @@ export default function CheckoutPage() {
     <div className="container-x py-8">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="font-display text-2xl font-black text-snow sm:text-3xl">إتمام الطلب</h1>
-        <span className="chip border-neon/30 bg-neon/10 text-neon">
+        <span className="chip border-cyan/30 bg-cyan/10 text-cyan">
           <LockIcon size={14} />
           صفحة واحدة — دقيقة وخلصنا
         </span>
@@ -212,7 +212,7 @@ export default function CheckoutPage() {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label
                 className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all ${
-                  pay === "cod" ? "border-neon bg-neon/5" : "border-line bg-panel-2"
+                  pay === "cod" ? "border-cyan bg-cyan/5" : "border-line bg-panel-2"
                 }`}
               >
                 <input
@@ -220,9 +220,9 @@ export default function CheckoutPage() {
                   name="pay"
                   checked={pay === "cod"}
                   onChange={() => setPay("cod")}
-                  className="h-5 w-5 accent-[#d4ff3f]"
+                  className="h-5 w-5 accent-[#06e2fa]"
                 />
-                <CashIcon size={24} className={pay === "cod" ? "text-neon" : "text-fog"} />
+                <CashIcon size={24} className={pay === "cod" ? "text-cyan" : "text-fog"} />
                 <span>
                   <span className="block font-bold text-snow">الدفع عند الاستلام</span>
                   <span className="text-xs text-fog">ادفع كاش وأنت مستلم طلبك</span>
@@ -230,7 +230,7 @@ export default function CheckoutPage() {
               </label>
               <label
                 className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all ${
-                  pay === "online" ? "border-neon bg-neon/5" : "border-line bg-panel-2"
+                  pay === "online" ? "border-cyan bg-cyan/5" : "border-line bg-panel-2"
                 }`}
               >
                 <input
@@ -238,9 +238,9 @@ export default function CheckoutPage() {
                   name="pay"
                   checked={pay === "online"}
                   onChange={() => setPay("online")}
-                  className="h-5 w-5 accent-[#d4ff3f]"
+                  className="h-5 w-5 accent-[#06e2fa]"
                 />
-                <LockIcon size={24} className={pay === "online" ? "text-neon" : "text-fog"} />
+                <LockIcon size={24} className={pay === "online" ? "text-cyan" : "text-fog"} />
                 <span>
                   <span className="block font-bold text-snow">دفع إلكتروني</span>
                   <span className="text-xs text-fog">فيزا / ماستركارد / محفظة إلكترونية</span>
@@ -275,22 +275,22 @@ export default function CheckoutPage() {
             {discount > 0 && (
               <div className="flex justify-between text-fog">
                 <dt>الخصم</dt>
-                <dd className="text-mint">- EGP {discount}</dd>
+                <dd className="text-teal">- EGP {discount}</dd>
               </div>
             )}
             <div className="flex justify-between text-fog">
               <dt>الشحن</dt>
-              <dd className={shipping === 0 ? "text-mint" : "text-snow"}>
+              <dd className={shipping === 0 ? "text-teal" : "text-snow"}>
                 {shipping === 0 ? "مجاني" : `EGP ${shipping}`}
               </dd>
             </div>
             <div className="flex justify-between border-t border-line pt-3 font-display text-lg font-black">
               <dt className="text-snow">الإجمالي</dt>
-              <dd className="text-neon">EGP {total}</dd>
+              <dd className="text-cyan">EGP {total}</dd>
             </div>
           </dl>
 
-          <button onClick={submit} className="btn-neon animate-pulse-glow mt-5 w-full font-display text-lg">
+          <button onClick={submit} className="btn-cyan animate-pulse-glow mt-5 w-full font-display text-lg">
             اطلب الآن — تأكيد الطلب
           </button>
           <p className="mt-3 text-center text-xs text-fog">

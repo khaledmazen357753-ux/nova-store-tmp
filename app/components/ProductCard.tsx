@@ -38,7 +38,7 @@ export default function ProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <div className="card group relative flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-neon/40 hover:shadow-[0_8px_40px_rgba(212,255,63,0.08)]">
+    <div className="card group relative flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-cyan/40 hover:shadow-[0_8px_40px_rgba(6,226,250,0.08)]">
       <Link
         href={`/product/${product.id}`}
         className="relative block aspect-square overflow-hidden bg-panel-2"
@@ -63,7 +63,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </span>
         )}
         {product.trending && (
-          <span className="absolute left-2 top-2 flex items-center gap-1 rounded-lg bg-ink/85 px-2 py-1 text-[11px] font-black text-neon backdrop-blur">
+          <span className="absolute left-2 top-2 flex items-center gap-1 rounded-lg bg-ink/85 px-2 py-1 text-[11px] font-black text-cyan backdrop-blur">
             <FireIcon size={12} />
             ترند
           </span>
@@ -72,7 +72,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-display text-sm font-bold leading-snug text-snow transition-colors group-hover:text-neon sm:text-base">
+          <h3 className="font-display text-sm font-bold leading-snug text-snow transition-colors group-hover:text-cyan sm:text-base">
             {product.name}
           </h3>
         </Link>
@@ -83,7 +83,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <StarIcon
               key={i}
               size={13}
-              className={i < Math.round(product.rating) ? "text-neon" : "text-line"}
+              className={i < Math.round(product.rating) ? "text-cyan" : "text-line"}
             />
           ))}
           <span className="text-[11px] text-fog">({product.reviews.toLocaleString("en")})</span>
@@ -91,7 +91,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div className="leading-none">
-            <span className="font-display text-base font-black text-neon sm:text-lg">
+            <span className="font-display text-base font-black text-cyan sm:text-lg">
               EGP {product.price}
             </span>
             {product.oldPrice && (
@@ -102,8 +102,8 @@ export default function ProductCard({ product }: { product: Product }) {
             onClick={add}
             className={`grid h-11 w-11 place-items-center rounded-xl transition-all ${
               added
-                ? "bg-mint text-ink"
-                : "bg-neon text-ink hover:brightness-110 active:scale-95"
+                ? "bg-teal text-ink"
+                : "bg-cyan text-ink hover:brightness-110 active:scale-95"
             }`}
             aria-label={
               added ? `تمت إضافة ${product.name} للسلة` : `أضف ${product.name} إلى السلة`

@@ -26,7 +26,7 @@ export default function DeviceFinder() {
           <div className="bg-dots pointer-events-none absolute inset-0 opacity-60" />
           <div className="relative">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-neon/15 text-neon">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-cyan/15 text-cyan">
                 <PhoneIcon size={22} />
               </span>
               <div>
@@ -37,7 +37,7 @@ export default function DeviceFinder() {
                   اختار موبايلك — وهنوريك الإكسسوارات المتوافقة معاه بس. صفر حيرة.
                 </p>
               </div>
-              <span className="chip mr-auto border-neon/30 bg-neon/10 text-neon">
+              <span className="chip mr-auto border-cyan/30 bg-cyan/10 text-cyan">
                 <BoltIcon size={14} />
                 بثواني
               </span>
@@ -96,7 +96,7 @@ export default function DeviceFinder() {
               </div>
 
               <div className="flex items-end">
-                <button onClick={apply} disabled={!model} className="btn-neon w-full sm:w-auto">
+                <button onClick={apply} disabled={!model} className="btn-cyan w-full sm:w-auto">
                   شوف المتوافق
                 </button>
               </div>
@@ -104,7 +104,7 @@ export default function DeviceFinder() {
 
             {device && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="chip border-mint/30 bg-mint/10 text-mint">
+                <span className="chip border-teal/30 bg-teal/10 text-teal">
                   <PhoneIcon size={14} />
                   موبايلك الحالي: {device}
                 </span>

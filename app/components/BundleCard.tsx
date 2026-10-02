@@ -30,8 +30,8 @@ export default function BundleCard({ bundle }: { bundle: (typeof bundles)[number
   };
 
   return (
-    <div className="card relative flex flex-col p-5 pt-7 transition-all duration-300 hover:-translate-y-1 hover:border-violet/50">
-      <span className="absolute -top-3 right-4 rounded-lg bg-violet px-3 py-1 text-xs font-black text-white shadow-[0_0_20px_rgba(139,92,246,.4)]">
+    <div className="card relative flex flex-col p-5 pt-7 transition-all duration-300 hover:-translate-y-1 hover:border-teal/50">
+      <span className="absolute -top-3 right-4 rounded-lg bg-teal px-3 py-1 text-xs font-black text-white shadow-[0_0_20px_rgba(43,170,198,.4)]">
         وفّر EGP {save}
       </span>
       <h3 className="font-display text-lg font-black text-snow">{bundle.name}</h3>
@@ -61,7 +61,7 @@ export default function BundleCard({ bundle }: { bundle: (typeof bundles)[number
       <ul className="mt-4 space-y-2 text-sm text-fog">
         {items.map((p) => (
           <li key={p.id} className="flex items-center gap-2">
-            <CheckIcon size={15} className="shrink-0 text-neon" />
+            <CheckIcon size={15} className="shrink-0 text-cyan" />
             {p.name}
           </li>
         ))}
@@ -69,13 +69,13 @@ export default function BundleCard({ bundle }: { bundle: (typeof bundles)[number
 
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-4 mt-6">
         <div className="leading-none">
-          <span className="font-display text-xl font-black text-neon">EGP {bundle.price}</span>
+          <span className="font-display text-xl font-black text-cyan">EGP {bundle.price}</span>
           <span className="mr-2 text-xs text-fog line-through">{old}</span>
         </div>
         <button
           onClick={add}
           className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
-            added ? "bg-mint text-ink" : "bg-neon text-ink hover:brightness-110"
+            added ? "bg-teal text-ink" : "bg-cyan text-ink hover:brightness-110"
           }`}
         >
           {added ? <CheckIcon size={16} /> : <BoltIcon size={16} />}

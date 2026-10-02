@@ -24,14 +24,14 @@ function ShippingBar({ subtotal }: { subtotal: number }) {
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 text-sm font-bold">
-        <TruckIcon size={18} className={remaining <= 0 ? "text-mint" : "text-neon"} />
+        <TruckIcon size={18} className={remaining <= 0 ? "text-teal" : "text-cyan"} />
         {remaining > 0 ? (
           <span className="text-snow">
-            أضف منتجات بقيمة <b className="text-neon">EGP {remaining}</b> إضافية لتستمتع بالشحن
+            أضف منتجات بقيمة <b className="text-cyan">EGP {remaining}</b> إضافية لتستمتع بالشحن
             المجاني!
           </span>
         ) : (
-          <span className="text-mint">مبروك! الشحن مجاني على طلبك</span>
+          <span className="text-teal">مبروك! الشحن مجاني على طلبك</span>
         )}
       </div>
       <div
@@ -43,7 +43,7 @@ function ShippingBar({ subtotal }: { subtotal: number }) {
         aria-label="التقدم نحو الشحن المجاني"
       >
         <div
-          className="h-full rounded-full bg-gradient-to-l from-neon to-mint transition-all duration-500"
+          className="h-full rounded-full bg-gradient-to-l from-cyan to-teal transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -84,7 +84,7 @@ export default function CartPage() {
           </span>
           <h1 className="mt-5 font-display text-2xl font-black text-snow">سلّتك فاضية..</h1>
           <p className="mt-2 text-fog">الدنيا بتستاهل — اتسوّق النهاردة واقتنص نسختك</p>
-          <Link href="/products" className="btn-neon mt-6">
+          <Link href="/products" className="btn-cyan mt-6">
             يلا نتسوّق
             <ArrowLeftIcon size={17} />
           </Link>
@@ -134,7 +134,7 @@ export default function CartPage() {
                   <div className="flex items-start justify-between gap-2">
                     <Link
                       href={`/product/${p.id}`}
-                      className="font-display text-sm font-bold leading-snug text-snow transition-colors hover:text-neon sm:text-base"
+                      className="font-display text-sm font-bold leading-snug text-snow transition-colors hover:text-cyan sm:text-base"
                     >
                       {p.name}
                     </Link>
@@ -146,14 +146,14 @@ export default function CartPage() {
                       <XIcon size={16} />
                     </button>
                   </div>
-                  <span className="mt-1 text-sm font-black text-neon">EGP {p.price}</span>
+                  <span className="mt-1 text-sm font-black text-cyan">EGP {p.price}</span>
 
                   <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                     <div className="flex items-center gap-1 rounded-xl border border-line bg-panel-2 p-1">
                       <button
                         onClick={() => setQty(p.id, line.qty - 1)}
                         aria-label={`قلل كمية ${p.name}`}
-                        className="grid h-9 w-9 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-neon"
+                        className="grid h-9 w-9 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-cyan"
                       >
                         <MinusIcon size={16} />
                       </button>
@@ -161,7 +161,7 @@ export default function CartPage() {
                       <button
                         onClick={() => setQty(p.id, line.qty + 1)}
                         aria-label={`زود كمية ${p.name}`}
-                        className="grid h-9 w-9 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-neon"
+                        className="grid h-9 w-9 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-cyan"
                       >
                         <PlusIcon size={16} />
                       </button>
@@ -182,8 +182,8 @@ export default function CartPage() {
 
           {/* الكوبون */}
           {coupon ? (
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-sm">
-              <span className="flex items-center gap-2 font-bold text-mint">
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-teal/30 bg-teal/10 px-4 py-3 text-sm">
+              <span className="flex items-center gap-2 font-bold text-teal">
                 <CheckCircleIcon size={16} />
                 كود {coupon} مفعّل
               </span>
@@ -213,7 +213,7 @@ export default function CartPage() {
               </div>
               {msg && (
                 <p
-                  className={`mt-2 text-xs ${msg.ok ? "text-mint" : "text-danger"}`}
+                  className={`mt-2 text-xs ${msg.ok ? "text-teal" : "text-danger"}`}
                   role="status"
                 >
                   {msg.msg}
@@ -230,22 +230,22 @@ export default function CartPage() {
             {discount > 0 && (
               <div className="flex justify-between text-fog">
                 <dt>الخصم</dt>
-                <dd className="text-mint">- EGP {discount}</dd>
+                <dd className="text-teal">- EGP {discount}</dd>
               </div>
             )}
             <div className="flex justify-between text-fog">
               <dt>الشحن</dt>
-              <dd className={shipping === 0 ? "text-mint" : "text-snow"}>
+              <dd className={shipping === 0 ? "text-teal" : "text-snow"}>
                 {shipping === 0 ? "مجاني" : `EGP ${shipping}`}
               </dd>
             </div>
             <div className="flex justify-between border-t border-line pt-3 font-display text-lg font-black">
               <dt className="text-snow">الإجمالي</dt>
-              <dd className="text-neon">EGP {total}</dd>
+              <dd className="text-cyan">EGP {total}</dd>
             </div>
           </dl>
 
-          <Link href="/checkout" className="btn-neon mt-5 w-full font-display text-lg">
+          <Link href="/checkout" className="btn-cyan mt-5 w-full font-display text-lg">
             أكمل الطلب — تشيك آوت بسرعة
             <ArrowLeftIcon size={17} />
           </Link>

@@ -1,4 +1,4 @@
-# 🚀 دليل نشر VOLT على الإنترنت وجوجل
+# 🚀 دليل نشر AXON على الإنترنت وجوجل
 
 > الموقع دلوقتي هو **جذر المشروع** (بعد استبدال Nova Store بالكامل) —
 > يعني النشر على Vercel **بدون أي إعدادات خاصة**.
@@ -9,23 +9,23 @@
 
 ### لو الريبو متوصل بمشروع Vercel قديم (زي nova-store-tmp.vercel.app):
 1. ادمج الـ PR المفتوح على GitHub (أو أي طريقة توصل شغلنا لفرع `main`)
-2. Vercel هيعمل deploy تلقائي — وهينشر **VOLT** مكان الموقع القديم على نفس اللينك
+2. Vercel هيعمل deploy تلقائي — وهينشر **AXON** مكان الموقع القديم على نفس اللينك
 3. خلاص 🎉
 
 ### لو مش متوصل لسه:
 1. افتح [vercel.com](https://vercel.com) → سجّل دخول بـ **Continue with GitHub**
 2. **Add New → Project** → اختار ريبو `nova-store-tmp` → دوس **Deploy**
-   - مفيش Root Directory ولا أي إعداد — الجذر هو VOLT جاهز
+   - مفيش Root Directory ولا أي إعداد — الجذر هو AXON جاهز
 3. خلاص 🎉
 
 ### بعد أول نشر (تحسينات اختيارية):
-- غيّر اسم المشروع من `nova-store-tmp` لـ `volt-store`:
-  **Settings → General → Project Name** → اللينك هيبقى `volt-store.vercel.app`
+- غيّر اسم المشروع من `nova-store-tmp` لـ `axon-store`:
+  **Settings → General → Project Name** → اللينك هيبقى `axon-store.vercel.app`
 - ضيف متغير البيئة `NEXT_PUBLIC_SITE_URL` = رابطك النهائي (أو الدومين المخصص):
   **Settings → Environment Variables** → بعدين **Deployments → Redeploy**
   (بدونه الموقع شغال عادي — بيستخدم رابط Vercel التلقائي)
 
-### دومين مخصص (voltstore.eg مثلاً):
+### دومين مخصص (axonstore.eg مثلاً):
 **Settings → Domains → Add** → اتبع تعليمات الـ DNS → وحدّث `NEXT_PUBLIC_SITE_URL` بيه.
 
 ---
@@ -76,7 +76,7 @@ rm -rf docs && cp -r out docs
 | البند | الحالة الحالية | المطلوب |
 |---|---|---|
 | أرقام التواصل | تجريبية (01000000000) | رقم واتساب حقيقي |
-| الإيميل | hello@voltstore.eg تجريبي | إيميل حقيقي |
+| الإيميل | hello@axonstore.eg تجريبي | إيميل حقيقي |
 | الدفع | COD + محاكاة إلكتروني | بوابة دفع (فوري/باي موب/كاش فلو) |
 | المنتجات | بيانات تجريبية (14 منتج) | منتجات وأسعار وصور حقيقية |
 | التتبع | localStorage تجريبي | ربط API حقيقي |

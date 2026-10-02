@@ -49,7 +49,7 @@ export default function BuyBox({ product }: { product: Product }) {
     <div className="mt-6">
       {/* فحص التوافق مع جهاز العميل */}
       {device && compatOk && (
-        <span className="chip border-mint/30 bg-mint/10 text-mint">
+        <span className="chip border-teal/30 bg-teal/10 text-teal">
           <CheckCircleIcon size={15} />
           متوافق مع جهازك ({device})
         </span>
@@ -61,8 +61,8 @@ export default function BuyBox({ product }: { product: Product }) {
         </span>
       )}
       {!device && (
-        <Link href="/#device-finder" className="chip transition-colors hover:border-neon/40 hover:text-neon">
-          <ShieldCheckIcon size={15} className="text-neon" />
+        <Link href="/#device-finder" className="chip transition-colors hover:border-cyan/40 hover:text-cyan">
+          <ShieldCheckIcon size={15} className="text-cyan" />
           {universal ? "متوافق مع كل الأجهزة — أو اختار موبايلك للتأكد" : "اختار موبايلك للتأكد من التوافق"}
         </Link>
       )}
@@ -73,7 +73,7 @@ export default function BuyBox({ product }: { product: Product }) {
         <div className="flex items-center gap-1 rounded-xl border border-line bg-panel-2 p-1">
           <button
             onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="grid h-10 w-10 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-neon"
+            className="grid h-10 w-10 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-cyan"
             aria-label="قلل الكمية"
           >
             <MinusIcon size={18} />
@@ -83,7 +83,7 @@ export default function BuyBox({ product }: { product: Product }) {
           </span>
           <button
             onClick={() => setQty((q) => Math.min(9, q + 1))}
-            className="grid h-10 w-10 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-neon"
+            className="grid h-10 w-10 place-items-center rounded-lg text-snow transition-colors hover:bg-panel hover:text-cyan"
             aria-label="زود الكمية"
           >
             <PlusIcon size={18} />
@@ -93,13 +93,13 @@ export default function BuyBox({ product }: { product: Product }) {
 
       {/* الأزرار */}
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <button onClick={buyNow} className="btn-neon animate-pulse-glow font-display text-lg">
+        <button onClick={buyNow} className="btn-cyan animate-pulse-glow font-display text-lg">
           اطلب الآن، وعيش التجربة
         </button>
         <button onClick={add} className="btn-ghost">
           {added ? (
             <>
-              <CheckCircleIcon size={18} className="text-mint" />
+              <CheckCircleIcon size={18} className="text-teal" />
               تمت الإضافة
             </>
           ) : (

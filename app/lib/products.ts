@@ -66,7 +66,7 @@ export const products: Product[] = [
     reviews: 1240,
     trending: true,
     compat: [...iModels.slice(2), ...sModels.slice(0, 3)],
-    colors: ["#0a0a10", "#d4ff3f", "#8b5cf6"],
+    colors: ["#202428", "#06e2fa", "#2baac6"],
     features: [
       "زوايا Airbag تمتص الصدمات من أي ارتفاع",
       "خامة TPU + بولي كربونيت مقواة ضد الخدش",
@@ -134,7 +134,7 @@ export const products: Product[] = [
   },
   {
     id: 5,
-    name: "باور بانك VoltBank 20000",
+    name: "باور بانك AxonPower 20000",
     desc: "شاشة رقمية وشحن جهازين في نفس الوقت",
     price: 899,
     oldPrice: 1099,
@@ -219,7 +219,7 @@ export const products: Product[] = [
     reviews: 5410,
     trending: true,
     compat: "all",
-    colors: ["#0a0a10", "#f4f4f8", "#d4ff3f"],
+    colors: ["#202428", "#e9edf1", "#06e2fa"],
     features: [
       "ANC هجين — عزل ضوضاء 35dB",
       "بطارية 36 ساعة مع الكيس",

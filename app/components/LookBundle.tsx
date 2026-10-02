@@ -31,7 +31,7 @@ export default function LookBundle({ product }: { product: Product }) {
   return (
     <section className="mt-14">
       <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet/15 text-violet">
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-teal/15 text-teal">
           <SparklesIcon size={22} />
         </span>
         <div>
@@ -48,14 +48,14 @@ export default function LookBundle({ product }: { product: Product }) {
               <label
                 key={p.id}
                 className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all ${
-                  on ? "border-neon/40 bg-neon/5" : "border-line bg-panel-2 opacity-60"
+                  on ? "border-cyan/40 bg-cyan/5" : "border-line bg-panel-2 opacity-60"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={on}
                   onChange={() => toggle(p.id)}
-                  className="h-5 w-5 accent-[#d4ff3f]"
+                  className="h-5 w-5 accent-[#06e2fa]"
                   aria-label={`ضم ${p.name} للكومبو`}
                 />
                 <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-panel-2">
@@ -63,7 +63,7 @@ export default function LookBundle({ product }: { product: Product }) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-snow">{p.name}</span>
-                  <span className="text-sm font-black text-neon">EGP {p.price}</span>
+                  <span className="text-sm font-black text-cyan">EGP {p.price}</span>
                 </span>
               </label>
             );
@@ -81,7 +81,7 @@ export default function LookBundle({ product }: { product: Product }) {
             onClick={add}
             disabled={!picked.length || added}
             className={`inline-flex min-h-12 items-center gap-2 rounded-2xl px-6 py-3 font-bold transition-all ${
-              added ? "bg-mint text-ink" : "bg-neon text-ink hover:brightness-110"
+              added ? "bg-teal text-ink" : "bg-cyan text-ink hover:brightness-110"
             } disabled:cursor-not-allowed disabled:opacity-50`}
           >
             {added ? <CheckCircleIcon size={18} /> : <BoltIcon size={18} />}

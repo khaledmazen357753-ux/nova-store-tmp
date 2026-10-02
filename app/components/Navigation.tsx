@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "../lib/store";
 import {
+  AxonMarkIcon,
   BagIcon,
-  BoltIcon,
   CashIcon,
   ChevronDownIcon,
   ClockIcon,
@@ -49,7 +49,7 @@ export default function Navigation() {
               <div key={copy} className="flex items-center gap-10" aria-hidden={copy === 1}>
                 {marqueeItems.map(({ t, Icon }, i) => (
                   <span key={i} className="flex items-center gap-2 whitespace-nowrap">
-                    <Icon size={15} className="text-neon" />
+                    <Icon size={15} className="text-cyan" />
                     {t}
                   </span>
                 ))}
@@ -61,13 +61,15 @@ export default function Navigation() {
         {/* القائمة الرئيسية */}
         <nav className="border-b border-line bg-ink/85 backdrop-blur-md">
           <div className="container-x flex h-16 items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-2.5" aria-label="VOLT — الرئيسية">
-              <span className="neon-glow grid h-9 w-9 place-items-center rounded-xl bg-neon text-ink">
-                <BoltIcon size={20} />
+            <Link href="/" className="flex items-center gap-2.5" aria-label="AXON — الرئيسية">
+              <span className="cyan-glow grid h-9 w-9 place-items-center rounded-xl bg-cyan text-ink">
+                <AxonMarkIcon size={20} />
               </span>
               <span className="leading-none">
-                <span className="font-display text-xl font-black tracking-wide text-snow">VOLT</span>
-                <span className="block text-[10px] text-fog">إكسسوارات موبايل</span>
+                <span className="font-display text-xl font-black tracking-[0.2em] text-snow">AXON</span>
+                <span className="block text-[9px] font-bold uppercase tracking-[0.28em] text-fog">
+                  Smart Accessories
+                </span>
               </span>
             </Link>
 
@@ -81,8 +83,8 @@ export default function Navigation() {
                   <Link
                     key={l.href}
                     href={l.href}
-                    className={`text-sm font-bold transition-colors hover:text-neon ${
-                      active ? "text-neon" : "text-fog"
+                    className={`text-sm font-bold transition-colors hover:text-cyan ${
+                      active ? "text-cyan" : "text-fog"
                     }`}
                   >
                     {l.label}
@@ -94,7 +96,7 @@ export default function Navigation() {
             <div className="flex items-center gap-2.5">
               {device && (
                 <span className="chip hidden sm:inline-flex">
-                  <PhoneIcon size={14} className="text-neon" />
+                  <PhoneIcon size={14} className="text-cyan" />
                   {device}
                   <button
                     onClick={() => setDevice(null)}
@@ -108,17 +110,17 @@ export default function Navigation() {
               <Link
                 href="/cart"
                 aria-label={`سلة المشتريات — ${count} منتج`}
-                className="relative grid h-11 w-11 place-items-center rounded-xl border border-line bg-panel text-snow transition-colors hover:border-neon/50 hover:text-neon"
+                className="relative grid h-11 w-11 place-items-center rounded-xl border border-line bg-panel text-snow transition-colors hover:border-cyan/50 hover:text-cyan"
               >
                 <BagIcon size={20} />
                 {count > 0 && (
-                  <span className="absolute -top-1.5 -left-1.5 grid h-5 w-5 place-items-center rounded-full bg-neon text-[11px] font-black text-ink">
+                  <span className="absolute -top-1.5 -left-1.5 grid h-5 w-5 place-items-center rounded-full bg-cyan text-[11px] font-black text-ink">
                     {count}
                   </span>
                 )}
               </Link>
               <button
-                className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-panel text-snow transition-colors hover:border-neon/50 hover:text-neon lg:hidden"
+                className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-panel text-snow transition-colors hover:border-cyan/50 hover:text-cyan lg:hidden"
                 onClick={() => setOpen(!open)}
                 aria-label={open ? "اقفل القائمة" : "افتح القائمة"}
                 aria-expanded={open}
@@ -136,7 +138,7 @@ export default function Navigation() {
                     key={l.href}
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="flex min-h-12 items-center justify-between rounded-xl px-3 py-3 text-sm font-bold text-snow transition-colors hover:bg-panel hover:text-neon"
+                    className="flex min-h-12 items-center justify-between rounded-xl px-3 py-3 text-sm font-bold text-snow transition-colors hover:bg-panel hover:text-cyan"
                   >
                     {l.label}
                     <ChevronDownIcon size={16} className="-rotate-90 text-fog" />
@@ -165,14 +167,14 @@ export default function Navigation() {
               key={href}
               href={href}
               className={`relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold transition-colors ${
-                active ? "text-neon" : "text-fog"
+                active ? "text-cyan" : "text-fog"
               }`}
               aria-current={active ? "page" : undefined}
             >
               <span className="relative">
                 <Icon size={21} />
                 {badge && count > 0 && (
-                  <span className="absolute -top-1.5 -left-2 grid h-4 min-w-4 place-items-center rounded-full bg-neon px-1 text-[9px] font-black text-ink">
+                  <span className="absolute -top-1.5 -left-2 grid h-4 min-w-4 place-items-center rounded-full bg-cyan px-1 text-[9px] font-black text-ink">
                     {count}
                   </span>
                 )}
