@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --gold-light: #fae79f;
+    --gold-primary: #d4af37;
+    --gold-deep: #99731a;
+    --obsidian-bg: #060608;
+    --onyx-card: #101015;
+    --onyx-elevated: #17171f;
+  }
+
+  body {
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+    background-color: #060608;
+    color: #f7f3e8;
+    overflow-x: hidden;
+  }
+}
+
+.font-royal {
+  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #fff1b8 0%, #e5c158 35%, #d4af37 65%, #9a741c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-metallic-btn {
+  background: linear-gradient(135deg, #f3d77d 0%, #d4af37 50%, #a57d1e 100%);
+  color: #09090b;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25), inset 0 1px 0 rgba(255, 248, 214, 0.6);
+  transition: all 0.2s ease;
+}
+
+.gold-metallic-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 26px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 248, 214, 0.8);
+  transform: translateY(-1px);
+}
+
+.gold-metallic-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.royal-card {
+  background: linear-gradient(180deg, rgba(20, 20, 26, 0.92) 0%, rgba(12, 12, 16, 0.95) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(212, 175, 55, 0.06);
+}
+
+.royal-double-frame {
+  position: relative;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+}
+
+.royal-double-frame::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.gold-input {
+  background-color: #0c0c10;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  color: #f7f3e8;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.gold-input:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.16);
+}
+
+@keyframes plusSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes goldPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.06);
+  }
+}
+
+.animate-plus-spin {
+  animation: plusSpin 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-plus-spin-fast {
+  animation: plusSpin 1.35s linear infinite;
+}
+
+.animate-gold-pulse {
+  animation: goldPulse 2.2s ease-in-out infinite;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* تخصيص شريط التمرير بالأسود والذهبي */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #09090c;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.65);
+}
+
+/* تنسيق الطباعة الرسمي للتقارير والفواتير مع العلامة المائية الذهبية */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .royal-card {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border: 1px solid #b38f24 !important;
+    box-shadow: none !important;
+  }
+  .gold-gradient-text {
+    background: none !important;
+    -webkit-text-fill-color: #8b6914 !important;
+    color: #8b6914 !important;
+  }
+  table th {
+    background: #f8f2de !important;
+    color: #111111 !important;
+    border-bottom: 2px solid #b38f24 !important;
+  }
+  table td {
+    color: #111111 !important;
+    border-bottom: 1px solid #e5dcc2 !important;
+  }
+}
