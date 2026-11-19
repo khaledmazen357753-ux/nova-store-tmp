@@ -1,0 +1,41 @@
+node_modules/
+dist/
+dist-app/
+artifacts/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/capacitor-cordova-android-plugins/build/
+android/keystore.properties
+android/*.jks
+android/*.keystore
+android/app/release/
+*.apk
+*.aab
+
+# iOS
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+ios/App/*.xcworkspace/xcuserdata/
+ios/App/public/
+ios/.capacitor/
+
+# misc
+*.tsbuildinfo
+.env
+.env.local
+
+# مخرجات cap sync (تُولَّد أثناء البناء)
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+ios/App/App/public/
+ios/App/App/capacitor.config.json
