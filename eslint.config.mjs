@@ -21,6 +21,7 @@ const eslintConfig = [
       "plus-frontend/**",
       "plus-admin/**",
       "plus-backend/**",
+      "plus-mobile/**",
     ],
     rules: {
       "react/no-unescaped-entities": "off",
