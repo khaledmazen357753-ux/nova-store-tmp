@@ -1,15 +1,18 @@
 {
   "version": 2,
-  "name": "plus-erp-api",
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "sql/**"
-    }
-  },
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.js"
+      "src": "api/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "sql/**"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.js"
     }
   ]
 }
