@@ -4,36 +4,32 @@
 
 ---
 
-## الخطوة الأولى: اعتماد التغييرات على الفرع الرئيسي (`main`) في GitHub
-بعد دمج طلب السحب (Pull Request) الخاص بهذا الفرع إلى `main`، تصبح المجلدات الثلاثة متاحة مباشرة للنشر السحابي الفوري.
+## ✅ المواقع المنشورة الآن (روابط دائمة على Vercel)
+
+| التطبيق | الرابط المباشر | الحالة |
+| --- | --- | --- |
+| 🧾 **تطبيق المحاسبي Plus** (لوحة المحاسبين والوحدات الست والتقارير) | **https://plus-accounting-erp.vercel.app** | يعمل ✅ |
+| 👑 **بوابة مدير النظام** (Plus Admin) | **https://plus-erp-admin.vercel.app** | يعمل ✅ |
+| ⚙️ **خادم البيانات** (Plus Backend API + SQL) | **https://plus-erp-api.vercel.app** | يعمل ✅ |
+
+> الروابط الثلاثة **مستقلة تماماً** عن دومين Nova Store (`nova-store-tmp.vercel.app` / `volt-store-tmp.vercel.app`) ولا يوجد أي تداخل بينها.
+> الواجهتان مضبوطتان تلقائياً على متغير البيئة `VITE_API_BASE_URL = https://plus-erp-api.vercel.app` فلا تحتاج أي إعداد إضافي.
+>
+> للتأكد من عمل الخادم: افتح https://plus-erp-api.vercel.app/api/health
 
 ---
 
-## الخطوة الثانية: النشر السريع على 3 دومينات مستقلة عبر Vercel (بضغطة زر)
+## ربط دومين مخصص (اختياري)
+كل مشروع على Vercel مستقل ويمكن ربط دومين خاص به من:
+**Project → Settings → Domains → Add**
+- `app.plus-accounting.app` أو `erp.your-domain.com` → مشروع `plus-accounting-erp`
+- `admin.plus-accounting.app` → مشروع `plus-erp-admin`
+- `api.plus-accounting.app` → مشروع `plus-erp-api`
 
-### 1. نشر الخادم وقاعدة البيانات أولاً (`plus-backend`)
-- افتح الرابط المباشر لإنشاء مشروع مستقل للـ Backend على Vercel:
-  👉 **[نشر Plus Backend API على دومين مستقل](https://vercel.com/new/import?s=https://github.com/khaledmazen357753-ux/nova-store-tmp/tree/main/plus-backend&project-name=plus-erp-api)**
-- أو من لوحة Vercel اختر **Add New Project** ← اختر المستودع `nova-store-tmp` ← اضغط **Edit** بجانب **Root Directory** واختر `plus-backend` ← سمِّ المشروع `plus-erp-api` واضغط **Deploy**.
-- بعد ثوانٍ ستحصل على رابط الخادم المستقل، مثلاً:
-  `https://plus-erp-api.vercel.app` *(انسخ هذا الرابط للخطوتين التاليتين)*.
-- *(ملاحظة للإنتاج الدائم الكثيف: ملفا `Dockerfile` و`render.yaml` و`railway.json` جاهزان أيضاً داخل `plus-backend/` إذا رغبت بنشر الخادم على Render أو Railway بقرص تخزين دائم).*
+> عند تغيير دومين الـ API يجب تحديث متغير `VITE_API_BASE_URL` في مشروعي الواجهتين ثم **Redeploy**. وبدلاً من ذلك يمكن لصق رابط الخادم في حقل «ربط خادم الـ Backend» بشاشة الدخول مباشرة دون إعادة نشر.
 
----
-
-### 2. نشر واجهة المحاسبين (`plus-frontend`) على دومينها المستقل
-- افتح الرابط المباشر لنشر تطبيق المحاسبي Plus:
-  👉 **[نشر تطبيق المحاسبي Plus على دومين مستقل](https://vercel.com/new/import?s=https://github.com/khaledmazen357753-ux/nova-store-tmp/tree/main/plus-frontend&project-name=plus-accounting-erp&env=VITE_API_BASE_URL)**
-- في خانة متغير البيئة **`VITE_API_BASE_URL`** ضع رابط الخادم الذي نسخته في الخطوة (1) (مثلاً `https://plus-erp-api.vercel.app`) ثم اضغط **Deploy**.
-- سيُنشر التطبيق على دومينه الخاص المستقل مثل: `https://plus-accounting-erp.vercel.app` (أو يمكنك ربط دومين مخصص من تبويب **Settings -> Domains**).
-
----
-
-### 3. نشر بوابة مدير النظام المستقلة (`plus-admin`) على دومينها المستقل
-- افتح الرابط المباشر لنشر بوابة مدير النظام الخاصة بـ Plus:
-  👉 **[نشر بوابة مدير النظام Plus Admin على دومين مستقل](https://vercel.com/new/import?s=https://github.com/khaledmazen357753-ux/nova-store-tmp/tree/main/plus-admin&project-name=plus-erp-admin&env=VITE_API_BASE_URL)**
-- في خانة **`VITE_API_BASE_URL`** ضع نفس رابط الخادم (`https://plus-erp-api.vercel.app`) واضغط **Deploy**.
-- ستحصل على دومين إداري مستقل تماماً مثل: `https://plus-erp-admin.vercel.app`.
+## تحديث الموقع بعد أي تعديل في الكود
+الثلاثة مشاريع مربوطة بمستودع GitHub على الفرع `main`، وبعد دمج أي تعديل يُعاد النشر تلقائياً. ولإعادة النشر يدوياً: **Project → Deployments → Redeploy**.
 
 ---
 
@@ -46,3 +42,34 @@
   - أمين المخزن: `store` / `plus123`
   - الموارد البشرية: `hr` / `plus123`
   - المراجع المالي: `auditor` / `plus123`
+
+---
+
+## 💡 ربط الواجهات بالخادم بدون إعادة بناء (مهم)
+إذا نُشرت الواجهات (`plus-frontend` / `plus-admin`) قبل معرفة رابط الخادم، فلا حاجة لإعادة النشر:
+بمجرد فتح الموقع سيظهر حقل **«رابط خادم البيانات (Backend API)»** على شاشة الدخول عند تعذّر الوصول إلى `/api`، ضع فيه رابط الخادم المنشور (مثل `https://plus-erp-api.vercel.app`) واضغط **حفظ وربط** — فيُخزَّن الرابط داخل المتصفح ويعمل كل شيء فوراً.
+
+---
+
+## 🖥️ التشغيل المحلي (3 تطبيقات في 3 طرفيات)
+```bash
+# 1) الخادم + قاعدة البيانات
+cd plus-backend && npm install && npm start          # http://localhost:4000
+
+# 2) تطبيق المحاسبي
+cd plus-frontend && npm install && npm run dev       # http://localhost:3001
+
+# 3) بوابة مدير النظام
+cd plus-admin && npm install && npm run dev          # http://localhost:3002
+```
+> ملف `plus-backend/sql/schema.sql` يحتوي مخطط قاعدة البيانات الكامل (30 جدولاً) ويُحمَّل تلقائياً مع بيانات تجريبية متوازنة محاسبياً عند أول تشغيل.
+
+---
+
+## 📋 ملخص العمل المنجز
+- **قاعدة بيانات علائقية** بعلاقات One-to-Many كاملة: حسابات (3 مستويات)، أصناف، عملاء، موردين، موظفين، بنوك + كل ملفات الحركة (يومية، خزينة، مبيعات، مشتريات، مخازن، حضور، رواتب).
+- **6 وحدات** في التطبيق: البيانات الأساسية، المالية (مع إلزام التوازن مدين = دائن)، المبيعات والمدينون، المشتريات والدائنون، المخازن وكارت الصنف، الموارد البشرية والرواتب.
+- **21 تقريراً** قابلة للطباعة وتصدير CSV موزّعة على 5 مجموعات.
+- **قواعد ذكية**: أرصدة العملاء والموردين اللحظية، تنبيهات حد الطلب وإعادة الطلب بضغطة واحدة، صافي الفاتورة، مطابقة المخزون، وإقفال وترحيل الفترة المالية.
+- **حاكمية وصلاحيات**: أدوار و5 مستويات إذن لكل وحدة، إدارة مستخدمين، سجلات تدقيق، نسخ احتياطي واستعادة.
+- **الهوية البصرية**: أسود وذهبي، الشعار الأصلي، علامة مائية بشكل الزائد، ومؤشر تحميل دوّار بنفس شكل الزائد.

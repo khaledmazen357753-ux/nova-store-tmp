@@ -19,6 +19,24 @@ const app = express();
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 
+// بعض بيئات الاستضافة (Vercel Serverless) تعيد كتابة المسار إلى مسار ملف الدالة
+// (مثل /api/index.js) بدلاً من المسار الأصلي. نُعيد المسار الأصلي حتى تعمل كل المسارات.
+app.use((req, _res, next) => {
+  const prefixes = ['/api/index.js', '/api/index', '/index.js'];
+  for (const prefix of prefixes) {
+    if (req.url === prefix || req.url.startsWith(`${prefix}?`)) {
+      req.url = '/' + (req.url.slice(prefix.length) || '');
+      break;
+    }
+    if (req.url.startsWith(`${prefix}/`)) {
+      req.url = req.url.slice(prefix.length);
+      break;
+    }
+  }
+  if (!req.url.startsWith('/')) req.url = `/${req.url}`;
+  next();
+});
+
 // الصفحة التعريفية لخادم الـ API المستقل
 app.get('/', (_req, res) => {
   const company = db.prepare(`SELECT company_name, fiscal_year, frontend_domain, admin_domain, api_domain FROM company_settings WHERE id = 1`).get();
