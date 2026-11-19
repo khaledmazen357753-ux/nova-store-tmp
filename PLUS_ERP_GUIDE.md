@@ -4,51 +4,32 @@
 
 ---
 
-## ✅ المواقع الآن (نسخة حيّة تعمل بالفعل)
+## ✅ المواقع المنشورة الآن (روابط دائمة على Vercel)
 
-المواقع الثلاثة **مشتغّلة فعلياً** الآن في بيئة المعاينة الحيّة، وكل واحد منها منفصل تماماً عن الآخر وعن Nova Store:
-
-| التطبيق | المسار | الحالة |
+| التطبيق | الرابط المباشر | الحالة |
 | --- | --- | --- |
-| 🧾 تطبيق المحاسبي Plus (لوحة المحاسبين) | معاينة حيّة على المنفذ **3001** | يعمل ✅ |
-| 👑 بوابة مدير النظام Plus Admin | معاينة حيّة على المنفذ **3002** | يعمل ✅ |
-| ⚙️ خادم البيانات Plus Backend API + SQL | معاينة حيّة على المنفذ **4000** | يعمل ✅ |
+| 🧾 **تطبيق المحاسبي Plus** (لوحة المحاسبين والوحدات الست والتقارير) | **https://plus-accounting-erp.vercel.app** | يعمل ✅ |
+| 👑 **بوابة مدير النظام** (Plus Admin) | **https://plus-erp-admin.vercel.app** | يعمل ✅ |
+| ⚙️ **خادم البيانات** (Plus Backend API + SQL) | **https://plus-erp-api.vercel.app** | يعمل ✅ |
 
-> المعاينات الحيّة تظهر في لوحة المعاينة (Live Preview) على يمين المحادثة — اضغط على المنفذ `3001` لفتح تطبيق المحاسبي، وعلى `3002` لفتح بوابة مدير النظام.
-> هذه المعاينات مؤقتة وتنتهي بانتهاء جلسة العمل في بيئة التطوير، ولذلك تُنشر النسخة السحابية الدائمة على دومينات مستقلة بالخطوات التالية.
-
----
-
-## الخطوة الأولى: اعتماد التغييرات على الفرع الرئيسي (`main`) في GitHub
-بعد دمج طلب السحب (Pull Request) الخاص بهذا الفرع إلى `main`، تصبح المجلدات الثلاثة متاحة مباشرة للنشر السحابي الفوري.
+> الروابط الثلاثة **مستقلة تماماً** عن دومين Nova Store (`nova-store-tmp.vercel.app` / `volt-store-tmp.vercel.app`) ولا يوجد أي تداخل بينها.
+> الواجهتان مضبوطتان تلقائياً على متغير البيئة `VITE_API_BASE_URL = https://plus-erp-api.vercel.app` فلا تحتاج أي إعداد إضافي.
+>
+> للتأكد من عمل الخادم: افتح https://plus-erp-api.vercel.app/api/health
 
 ---
 
-## الخطوة الثانية: النشر السريع على 3 دومينات مستقلة عبر Vercel (بضغطة زر)
+## ربط دومين مخصص (اختياري)
+كل مشروع على Vercel مستقل ويمكن ربط دومين خاص به من:
+**Project → Settings → Domains → Add**
+- `app.plus-accounting.app` أو `erp.your-domain.com` → مشروع `plus-accounting-erp`
+- `admin.plus-accounting.app` → مشروع `plus-erp-admin`
+- `api.plus-accounting.app` → مشروع `plus-erp-api`
 
-### 1. نشر الخادم وقاعدة البيانات أولاً (`plus-backend`)
-- افتح الرابط المباشر لإنشاء مشروع مستقل للـ Backend على Vercel:
-  👉 **[نشر Plus Backend API على دومين مستقل](https://vercel.com/new/import?s=https://github.com/khaledmazen357753-ux/nova-store-tmp/tree/main/plus-backend&project-name=plus-erp-api)**
-- أو من لوحة Vercel اختر **Add New Project** ← اختر المستودع `nova-store-tmp` ← اضغط **Edit** بجانب **Root Directory** واختر `plus-backend` ← سمِّ المشروع `plus-erp-api` واضغط **Deploy**.
-- بعد ثوانٍ ستحصل على رابط الخادم المستقل، مثلاً:
-  `https://plus-erp-api.vercel.app` *(انسخ هذا الرابط للخطوتين التاليتين)*.
-- *(ملاحظة للإنتاج الدائم الكثيف: ملفا `Dockerfile` و`render.yaml` و`railway.json` جاهزان أيضاً داخل `plus-backend/` إذا رغبت بنشر الخادم على Render أو Railway بقرص تخزين دائم).*
+> عند تغيير دومين الـ API يجب تحديث متغير `VITE_API_BASE_URL` في مشروعي الواجهتين ثم **Redeploy**. وبدلاً من ذلك يمكن لصق رابط الخادم في حقل «ربط خادم الـ Backend» بشاشة الدخول مباشرة دون إعادة نشر.
 
----
-
-### 2. نشر واجهة المحاسبين (`plus-frontend`) على دومينها المستقل
-- افتح الرابط المباشر لنشر تطبيق المحاسبي Plus:
-  👉 **[نشر تطبيق المحاسبي Plus على دومين مستقل](https://vercel.com/new/import?s=https://github.com/khaledmazen357753-ux/nova-store-tmp/tree/main/plus-frontend&project-name=plus-accounting-erp&env=VITE_API_BASE_URL)**
-- في خانة متغير البيئة **`VITE_API_BASE_URL`** ضع رابط الخادم الذي نسخته في الخطوة (1) (مثلاً `https://plus-erp-api.vercel.app`) ثم اضغط **Deploy**.
-- سيُنشر التطبيق على دومينه الخاص المستقل مثل: `https://plus-accounting-erp.vercel.app` (أو يمكنك ربط دومين مخصص من تبويب **Settings -> Domains**).
-
----
-
-### 3. نشر بوابة مدير النظام المستقلة (`plus-admin`) على دومينها المستقل
-- افتح الرابط المباشر لنشر بوابة مدير النظام الخاصة بـ Plus:
-  👉 **[نشر بوابة مدير النظام Plus Admin على دومين مستقل](https://vercel.com/new/import?s=https://github.com/khaledmazen357753-ux/nova-store-tmp/tree/main/plus-admin&project-name=plus-erp-admin&env=VITE_API_BASE_URL)**
-- في خانة **`VITE_API_BASE_URL`** ضع نفس رابط الخادم (`https://plus-erp-api.vercel.app`) واضغط **Deploy**.
-- ستحصل على دومين إداري مستقل تماماً مثل: `https://plus-erp-admin.vercel.app`.
+## تحديث الموقع بعد أي تعديل في الكود
+الثلاثة مشاريع مربوطة بمستودع GitHub على الفرع `main`، وبعد دمج أي تعديل يُعاد النشر تلقائياً. ولإعادة النشر يدوياً: **Project → Deployments → Redeploy**.
 
 ---
 
