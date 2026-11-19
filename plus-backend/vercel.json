@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "name": "plus-erp-api",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "sql/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.js"
+    }
+  ]
+}

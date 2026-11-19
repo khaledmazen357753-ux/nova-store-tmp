@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -13,12 +14,16 @@
 # testing
 /coverage
 
-# next.js
+# next.js & vite
 /.next/
 /out/
+**/dist/
 
 # production
 /build
+
+# runtime sqlite databases
+plus-backend/data/*.sqlite*
 
 # misc
 .DS_Store
@@ -32,6 +37,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!**/.env.example
 
 # vercel
 .vercel
