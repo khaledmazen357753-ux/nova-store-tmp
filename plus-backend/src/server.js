@@ -65,17 +65,6 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// نقطة تشخيص مؤقتة لتتبع المسارات على بيئات الاستضافة
-app.get('/api/_debug', (req, res) => {
-  res.json({
-    url: req.url,
-    originalUrl: req.originalUrl,
-    path: req.path,
-    host: req.headers.host,
-    vercel: Boolean(process.env.VERCEL),
-  });
-});
-
 app.use('/api/auth', createAuthRouter(db, authenticate));
 app.use('/api/master', createMasterRouter(db, authenticate));
 app.use('/api/transactions', createTransactionsRouter(db, authenticate));
