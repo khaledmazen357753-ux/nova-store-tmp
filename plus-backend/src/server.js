@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { openDatabase } = require('./db');
 const { createAuthMiddleware } = require('./auth');
+const { landingPage } = require('./landing');
 
 const createAuthRouter = require('./routes/auth');
 const createMasterRouter = require('./routes/master');
@@ -37,8 +38,14 @@ app.use((req, _res, next) => {
   next();
 });
 
-// الصفحة التعريفية لخادم الـ API المستقل
+// الصفحة التعريفية لخادم الـ API المستقل (واجهة HTML سوداء وذهبية)
 app.get('/', (_req, res) => {
+  const company = db.prepare(`SELECT company_name, fiscal_year, frontend_domain, admin_domain, api_domain FROM company_settings WHERE id = 1`).get();
+  res.type('html').send(landingPage({ company, health: { ok: true } }));
+});
+
+// بيانات الخدمة بصيغة JSON (للاستخدام البرمجي والمراقبة)
+app.get('/api/info', (_req, res) => {
   const company = db.prepare(`SELECT company_name, fiscal_year, frontend_domain, admin_domain, api_domain FROM company_settings WHERE id = 1`).get();
   res.json({
     service: 'Plus Accounting ERP — Standalone Backend API',
