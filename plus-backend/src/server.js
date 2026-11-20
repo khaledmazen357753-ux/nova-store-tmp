@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { openDatabase } = require('./db');
+const { openDatabase, IS_SERVERLESS } = require('./db');
+const { driverName } = require('./libsql-adapter');
 const { createAuthMiddleware } = require('./auth');
 const { landingPage } = require('./landing');
 
@@ -68,8 +69,30 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     service: 'plus-erp-backend',
+    storage: db.isRemote ? 'turso' : 'local-sqlite',
+    driver: driverName,
+    persistent: db.isRemote || !IS_SERVERLESS,
     timestamp: new Date().toISOString(),
   });
+});
+
+/**
+ * دفع التغييرات إلى Turso فوراً بعد أي عملية كتابة.
+ *
+ * السبب: كل قراءة وكتابة تحصل على الملف المحلي (سريع ومتزامن كما هو الكود)،
+ * ثم ننسخ النسخة إلى السحابة بعد انتهاء رد الطلب — فيبقى الرد سريعاً
+ * والبيانات مقيمة على Turso حتى لو أُعيد تشغيل السيرفر أو تبدّلت النسخة.
+ *
+ * الفشل هنا لا يُفشل الطلب: التغيير محفوظ محلياً على أي حال.
+ */
+app.use('/api', (req, res, next) => {
+  if (req.method === 'GET' || !db.isRemote) return next();
+  res.on('finish', () => {
+    if (res.statusCode < 400) {
+      db.sync().catch(() => {});
+    }
+  });
+  next();
 });
 
 app.use('/api/auth', createAuthRouter(db, authenticate));

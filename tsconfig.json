@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "plus-frontend", "plus-admin", "plus-backend", "plus-mobile"]
+  "exclude": ["node_modules", "plus-frontend", "plus-admin", "plus-backend"]
 }

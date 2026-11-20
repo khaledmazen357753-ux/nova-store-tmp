@@ -7,11 +7,14 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node --no-warnings src/server.js",
-    "dev": "node --no-warnings --watch src/server.js"
+    "dev": "node --no-warnings --watch src/server.js",
+    "verify": "node scripts/verify-turso.js",
+    "migrate:turso": "node scripts/push-to-turso.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "libsql": "^0.5.29"
   },
   "engines": {
     "node": "22.x"
