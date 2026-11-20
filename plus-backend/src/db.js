@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
+const { createDatabase } = require('./libsql-adapter');
 const { hashPassword, logAudit } = require('./auth');
 const {
   computeReorderPoint,
@@ -9,22 +9,52 @@ const {
   createPurchaseInvoiceRaw,
 } = require('./accountingEngine');
 
+/**
+ * إعداد قاعدة البيانات — تعمل في ثلاثة أنماط:
+ *
+ *  1) محلي فقط (افتراضي في التطوير)
+ *     ملف SQLite على القرص. لا يحتاج أي إعداد.
+ *
+ *  2) Turso — النسخة السحابية الدائمة (المطلوب في الإنتاج)
+ *     عند وجود TURSO_DATABASE_URL + TURSO_AUTH_TOKEN يعمل التطبيق بنمط
+ *     embedded replica: كل القراءة والكتابة تحصل على الملف المحلي فوراً،
+ *     ثم تُدفع التغييرات إلى Turso في الخلفية. النتيجة:
+ *       - البيانات دائمة (لم تعد تُفقد مع إعادة تشغيل السيرفر)
+ *       - الاستعلامات تبقى متزامنة وسريعة كما هي (لم تُلمس)
+ *       - النظام يستمر بالعمل محلياً لو انقطعت الشبكة لحظياً
+ *
+ *  3) Vercel Serverless
+ *     نظام ملفات Vercel للقراءة فقط، ولا يسمح إلا بالكتابة في /tmp.
+ *     لذلك نستخدم /tmp كنسخة عمل، وTurso هو مصدر الحقيقة الدائم.
+ *     بدون Turso على Vercel تعود البيانات للبيانات الأولية عند كل إعادة تشغيل.
+ */
 const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+const TURSO_URL = (process.env.TURSO_DATABASE_URL || '').trim();
+const TURSO_TOKEN = (process.env.TURSO_AUTH_TOKEN || '').trim();
+const USE_TURSO = Boolean(TURSO_URL && TURSO_TOKEN);
+
 const DB_PATH =
   process.env.PLUS_DB_PATH ||
-  (IS_SERVERLESS ? '/tmp/plus_erp.sqlite' : path.join(__dirname, '..', 'data', 'plus_erp.sqlite'));
+  (IS_SERVERLESS ? '/tmp/plus_erp_replica.sqlite' : path.join(__dirname, '..', 'data', 'plus_erp.sqlite'));
 const SCHEMA_PATH = path.join(__dirname, '..', 'sql', 'schema.sql');
 
 function openDatabase() {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  const db = new DatabaseSync(DB_PATH);
+
+  const db = createDatabase({
+    path: DB_PATH,
+    syncUrl: USE_TURSO ? TURSO_URL : undefined,
+    authToken: USE_TURSO ? TURSO_TOKEN : undefined,
+  });
+
   db.exec('PRAGMA foreign_keys = ON;');
-  if (!IS_SERVERLESS) {
-    db.exec('PRAGMA journal_mode = WAL;');
-  }
+
   const schemaSql = fs.readFileSync(SCHEMA_PATH, 'utf8');
   db.exec(schemaSql);
 
+  // الزراعة تحدث مرة واحدة فقط في عمر قاعدة البيانات؛
+  // على Turso ستجد البيانات موجودة بالفعل وتتخطى هذه الخطوة.
   const countRoles = db.prepare(`SELECT COUNT(*) AS cnt FROM roles`).get().cnt;
   if (countRoles === 0) {
     seedDatabase(db);
@@ -587,4 +617,7 @@ module.exports = {
   seedDatabase,
   DB_PATH,
   SCHEMA_PATH,
+  IS_SERVERLESS,
+  USE_TURSO,
+  TURSO_URL,
 };

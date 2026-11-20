@@ -5,7 +5,7 @@
       "src": "api/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": "sql/**"
+        "includeFiles": "{sql/**,node_modules/@libsql/**,node_modules/libsql/**,node_modules/@neon-rs/**,node_modules/detect-libc/**}"
       }
     }
   ],

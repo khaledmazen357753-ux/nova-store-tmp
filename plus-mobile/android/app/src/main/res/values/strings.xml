@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">المحاسبي Plus</string>
-    <string name="title_activity_main">المحاسبي Plus</string>
-    <string name="package_name">app.plusaccounting.mobile</string>
-    <string name="custom_url_scheme">app.plusaccounting.mobile</string>
-</resources>
