@@ -263,7 +263,12 @@ module.exports = function createAdminRouter(db, authenticate) {
         if (!period) throw new Error('الفترة المالية المحددة غير موجودة');
         if (period.status === 'مقفلة') throw new Error('هذه الفترة المالية مقفلة ومرحّلة مسبقاً');
 
-        // حساب صافي حركة حسابات الإيرادات والمصروفات لإقفالها في الأرباح المحتجزة (2302)
+        // حساب صافي حركة حسابات الإيرادات والمصروفات **الخاصة بالفترة المقفلة فقط**.
+        //
+        // ملاحظة مهمة: كان هذا الاستعلام يقرأ كل الحركات في قاعدة البيانات بلا
+        // تصفية بالفترة، فإقفال السنة الثانية كان يقفل حركة السنتين معاً وينتج
+        // رقماً خاطئاً محاسبياً. التصفية الآن على period_id المسجّل في القيد نفسه،
+        // مع احتساب القيود القديمة التي لم يُسجَّل لها period_id عبر نطاق التواريخ.
         const incomeExpenseAccs = db.prepare(`
           SELECT a.account_code, a.account_name, mg.main_group_code,
                  COALESCE(SUM(jl.debit), 0) AS d,
@@ -272,9 +277,14 @@ module.exports = function createAdminRouter(db, authenticate) {
           JOIN account_sub_groups sg ON sg.sub_group_code = a.sub_group_code
           JOIN account_main_groups mg ON mg.main_group_code = sg.main_group_code
           LEFT JOIN journal_entry_lines jl ON jl.account_code = a.account_code
+            AND jl.entry_number IN (
+              SELECT je.entry_number FROM journal_entries je
+              WHERE je.period_id = ?
+                 OR (je.period_id IS NULL AND je.entry_date BETWEEN ? AND ?)
+            )
           WHERE mg.main_group_code IN ('3', '4')
           GROUP BY a.account_code
-        `).all();
+        `).all(period_id, period.start_date, period.end_date);
 
         const closingLines = [];
         let totalRev = 0;
