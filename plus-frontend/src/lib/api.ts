@@ -14,7 +14,7 @@
  */
 
 import { dispatch as offlineDispatch } from '../offline/bridge';
-import { offlineState, initOfflineEngine } from '../offline/engine';
+import { offlineState, initOfflineEngine, canWrite } from '../offline/engine';
 
 const CUSTOM_API_KEY = 'plus_custom_api_base_url';
 const TOKEN_KEY = 'plus_erp_auth_token';
@@ -100,6 +100,16 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
   // ═══════════ الوضع الأوفلاين (الافتراضي) ═══════════════════════
   // ننتظر التهيئة إن لم تكن تمت بعد — أول طلب يفتح قاعدة البيانات المحلية
   const engineState = offlineState() || (await initOfflineEngine());
+
+  // تبويب للعرض فقط: نرفض الكتابة قبل وصولها للمحرك.
+  // (تبويبان يكتبان في نفس القاعدة المحلية يحفظ كلٌّ منهما صورته فوق الأخرى.)
+  if (method !== 'GET' && !canWrite()) {
+    throw makeError(
+      'النظام مفتوح في تبويب آخر وهو التبويب النشط للكتابة. اعمل من ذلك التبويب، أو أغلقه ثم أعد تحميل هذه الصفحة.',
+      'READ_ONLY_TAB',
+      409
+    );
+  }
 
   const body =
     options.body === undefined || options.body === null

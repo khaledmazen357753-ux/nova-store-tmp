@@ -20,6 +20,8 @@ const TMP = path.join(ROOT, 'node_modules', '.offline-verify');
 // نسختان منفصلتان من الحزمة: الثانية تحاكي إعادة تحميل الصفحة بدقة
 // (وحدات JS جديدة تماماً + نفس IndexedDB — وهو ما يحدث فعلياً في المتصفح)
 const TMP2 = path.join(ROOT, 'node_modules', '.offline-verify-2');
+// نسخة ثالثة: تحاكي تبويباً ثانياً لم يُهيَّأ بعد (وحدات جديدة تماماً)
+const TMP3 = path.join(ROOT, 'node_modules', '.offline-verify-3');
 
 const results = [];
 function check(name, ok, extra = '') {
@@ -38,7 +40,8 @@ async function main() {
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
-  for (const out of [TMP, TMP2]) {
+  rmSync(TMP3, { recursive: true, force: true });
+  for (const out of [TMP, TMP2, TMP3]) {
     execSync(
       `npx esbuild ${ENTRY} --format=cjs --platform=node --outbase=src --outdir=${JSON.stringify(
         out
@@ -298,6 +301,74 @@ async function main() {
     `رصيد 2026: ${Math.round(bal2026).toLocaleString('en-US')}`
   );
 
+  // ── 13) قفل الكتابة بين التبويبات ────────────────────────────
+  // Node لا يوفر Web Locks، فنحقن بديلاً يحاكي الحالة الواقعية:
+  // القفل محجوز لتبويب آخر، فلا يُمنح لهذا التبويب أبداً.
+  const realNavigator = globalThis.navigator;
+  Object.defineProperty(globalThis, 'navigator', {
+    value: {
+      onLine: true,
+      locks: { request: () => new Promise(() => {}) }, // القفل محجوز لغيرنا
+    },
+    configurable: true,
+  });
+
+  const readerEngine = await import(pathToFileURL(path.join(TMP3, 'offline/engine.js')).href);
+  const readerApi = await import(pathToFileURL(path.join(TMP3, 'lib/api.js')).href);
+  await readerEngine.initOfflineEngine();
+
+  const readerIsWriter = readerEngine.canWrite();
+
+  let readerRefused = null;
+  try {
+    await readerApi.apiFetch('/api/transactions/sales-invoices', {
+      method: 'POST',
+      body: JSON.stringify({
+        invoice_no: 'SINV-READER',
+        invoice_date: '2026-11-19',
+        employee_code: 'EMP-001',
+        customer_id: 'CUST-001',
+        payment_method: 'آجل',
+        items: [{ item_code: 'ITM-101', quantity: 1, unit_price: 100, discount_percent: 0 }],
+      }),
+    });
+  } catch (e) {
+    readerRefused = e;
+  }
+
+  let readerCanRead = false;
+  try {
+    await readerApi.apiFetch('/api/reports/dashboard');
+    readerCanRead = true;
+  } catch {
+    readerCanRead = false;
+  }
+
+  // التبويب القارئ متصل بتلك القاعدة المحلية أم لا؟
+  const readerSawInvoice = (() => {
+    try {
+      return (
+        readerEngine
+          .offlineState()
+          .db.prepare(`SELECT COUNT(*) AS c FROM sales_invoices WHERE invoice_no = 'SINV-READER'`)
+          .get().c === 0
+      );
+    } catch {
+      return false;
+    }
+  })();
+
+  Object.defineProperty(globalThis, 'navigator', { value: realNavigator, configurable: true });
+
+  check('التبويب الثاني ليس كاتباً', readerIsWriter === false);
+  check(
+    'الكتابة مرفوضة في التبويب الثاني',
+    readerRefused?.code === 'READ_ONLY_TAB',
+    readerRefused ? `${readerRefused.status} ${readerRefused.code}` : 'سُمح بالكتابة ❌'
+  );
+  check('القراءة مسموحة في التبويب الثاني', readerCanRead === true);
+  check('لم تُحفظ أي فاتورة من التبويب المرفوض', readerSawInvoice === true);
+
   // ── الخلاصة ────────────────────────────────────────────────
   const passed = results.filter((r) => r.ok).length;
   const total = results.length;
@@ -307,6 +378,7 @@ async function main() {
 
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
+  rmSync(TMP3, { recursive: true, force: true });
   process.exit(passed === total ? 0 : 1);
 }
 
