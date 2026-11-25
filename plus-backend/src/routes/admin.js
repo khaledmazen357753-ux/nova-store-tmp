@@ -3,6 +3,7 @@ const express = require('express');
 const { hashPassword, requireAdminPortal, logAudit } = require('../auth');
 const { SCHEMA_PATH, seedDatabase } = require('../db');
 const { round2, runInTransaction, postJournalEntryRaw } = require('../accountingEngine');
+const { validateBackup, applyRestore } = require('../backupRestore');
 
 module.exports = function createAdminRouter(db, authenticate) {
   const router = express.Router();
@@ -402,6 +403,103 @@ module.exports = function createAdminRouter(db, authenticate) {
       application: 'Plus Accounting ERP',
       tables_count: tables.length,
       data: snapshot,
+    });
+  });
+
+  /**
+   * معاينة استعادة نسخة احتياطية — بلا أي كتابة.
+   *
+   * الغرض: يرى المستخدم بالضبط ماذا سيحدث قبل أن يقرر. الاستعادة لا رجعة
+   * فيها، فلا يصح أن تكون زراً يضغطه وهو لا يعرف ماذا سيفقد.
+   */
+  router.post('/restore/preview', (req, res) => {
+    let report;
+    try {
+      report = validateBackup(db, req.body);
+    } catch (err) {
+      return res.status(err.statusCode || 400).json({ error: err.message });
+    }
+
+    const current = {};
+    for (const t of report.tables) {
+      current[t.table] = db.prepare(`SELECT COUNT(*) AS c FROM ${t.table}`).get().c;
+    }
+
+    res.json({
+      ok: true,
+      exported_at: report.exportedAt,
+      application: report.application,
+      tables_count: report.tables.length,
+      total_rows: report.totalRows,
+      tables: report.tables.map((t) => ({
+        table: t.table,
+        current_rows: current[t.table],
+        incoming_rows: t.rows,
+        delta: t.rows - current[t.table],
+      })),
+      warnings: report.warnings,
+    });
+  });
+
+  /**
+   * استعادة نسخة احتياطية.
+   *
+   * بلا هذه الدالة كانت النسخة المصدَّرة من /backup بلا فائدة — تُنزَّل ولا
+   * يمكن إرجاعها، وهو أسوأ من عدم وجود نسخ احتياطي أصلاً لأن المستخدم يظن
+   * نفسه في أمان.
+   *
+   * تتطلب تأكيداً صريحاً: قرار الاستعادة يمحو كل البيانات الحالية.
+   */
+  router.post('/restore', (req, res) => {
+    const { confirm, backup } = req.body || {};
+    if (confirm !== 'RESTORE') {
+      return res.status(400).json({
+        error: 'الاستعادة تمحو كل البيانات الحالية. أرسل confirm="RESTORE" للتأكيد.',
+      });
+    }
+
+    let report;
+    try {
+      report = validateBackup(db, backup);
+    } catch (err) {
+      return res.status(err.statusCode || 400).json({ error: err.message });
+    }
+
+    // نتحقق من وجود مستخدم مدير واحد على الأقل في النسخة، وإلا فقدنا القدرة
+    // على الدخول للنظام بعد الاستعادة ولا سبيل لاسترجاعه من الواجهة.
+    const users = backup.data.users;
+    if (!Array.isArray(users) || users.length === 0) {
+      return res.status(400).json({
+        error: 'النسخة لا تحتوي على أي مستخدم — رفضها لأنك لن تستطيع الدخول بعد الاستعادة.',
+      });
+    }
+
+    try {
+      applyRestore(db, req, report, backup);
+    } catch (err) {
+      return res.status(400).json({
+        error: `فشلت الاستعادة وتم التراجع بالكامل، ولم تتغير أي بيانات: ${err.message}`,
+      });
+    }
+
+    // التسجيل بعد النجاح: لو فشلت الاستعادة فلا أثر لها في السجلات أصلاً
+    logAudit(db, {
+      username: req.user.username,
+      user_role: req.user.role_code,
+      portal: 'ADMIN',
+      module: 'النسخ الاحتياطي',
+      action: 'استعادة نسخة احتياطية كاملة',
+      entity_id: new Date().toISOString().slice(0, 10),
+      details: `استُعيدت ${report.tables.length} جدولاً و${report.totalRows} صفاً` +
+        (report.exportedAt ? ` من نسخة بتاريخ ${report.exportedAt.slice(0, 10)}` : ''),
+    });
+
+    res.json({
+      ok: true,
+      message: 'تمت الاستعادة بنجاح',
+      tables_count: report.tables.length,
+      total_rows: report.totalRows,
+      warnings: report.warnings,
     });
   });
 

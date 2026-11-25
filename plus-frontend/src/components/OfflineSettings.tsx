@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cloud, Database, Download, HardDrive, RefreshCw, Trash2, X, Check } from 'lucide-react';
+import { Cloud, Database, Download, HardDrive, RefreshCw, Trash2, X, Check, Upload, AlertTriangle } from 'lucide-react';
 import { getDataMode, setDataMode, setCustomApiBaseUrl, getApiBaseUrl } from '../lib/api';
 import { offlineState, offlineStorageBytes, resetOfflineData, persistNow } from '../offline/engine';
 
@@ -21,11 +21,28 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
+  // ── الاستعادة ──
+  // المرحلة الأولى معاينة فقط: لا يُلمس شيء حتى يرى المستخدم ماذا سيفقد.
+  const [restoreFile, setRestoreFile] = useState<{ name: string; payload: unknown } | null>(null);
+  const [restorePreview, setRestorePreview] = useState<{
+    tables_count: number;
+    total_rows: number;
+    exported_at: string | null;
+    tables: { table: string; current_rows: number; incoming_rows: number; delta: number }[];
+    warnings: string[];
+  } | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoreDone, setRestoreDone] = useState<string | null>(null);
+
   useEffect(() => {
     if (!open) return;
     void offlineStorageBytes().then(setBytes);
     setConfirmReset(false);
     setSaved(false);
+    setRestoreFile(null);
+    setRestorePreview(null);
+    setRestoreError(null);
+    setRestoreDone(null);
   }, [open]);
 
   if (!open) return null;
@@ -79,6 +96,83 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** ينفّذ طلباً على الراوتر المحلي أو السحابي — نفس مسار النسخ الاحتياطي */
+  const callApi = async (method: 'GET' | 'POST', path: string, body?: unknown) => {
+    const st = offlineState();
+    if (st) {
+      const result = await (
+        await import('../offline/bridge')
+      ).dispatch(st.routers, method, path, {
+        headers: { authorization: `Bearer ${localStorage.getItem('plus_erp_auth_token') || ''}` },
+        body: body as Record<string, unknown> | undefined,
+      });
+      return { status: result.status, body: result.body as Record<string, unknown> };
+    }
+    const res = await fetch(path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('plus_erp_auth_token') || ''}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { status: res.status, body: (await res.json().catch(() => ({}))) as Record<string, unknown> };
+  };
+
+  /** يقرأ الملف ويعرض تقريراً — بلا أي كتابة */
+  const pickRestoreFile = async (file: File) => {
+    setBusy('preview');
+    setRestoreError(null);
+    setRestoreDone(null);
+    setRestorePreview(null);
+    try {
+      let payload: Record<string, unknown>;
+      try {
+        payload = JSON.parse(await file.text());
+      } catch {
+        throw new Error('الملف ليس JSON صالحاً — تأكد أنه النسخة الاحتياطية التي نزّلتها من النظام.');
+      }
+
+      const res = await callApi('POST', '/api/admin/restore/preview', payload);
+      if (res.status !== 200) {
+        throw new Error(String(res.body.error || 'تعذر التحقق من الملف'));
+      }
+      setRestoreFile({ name: file.name, payload });
+      setRestorePreview(res.body as unknown as typeof restorePreview);
+    } catch (err) {
+      setRestoreError(err instanceof Error ? err.message : 'تعذر قراءة الملف');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** التنفيذ الفعلي — بعد المعاينة والموافقة الصريحة */
+  const runRestore = async () => {
+    if (!restoreFile) return;
+    setBusy('restore');
+    setRestoreError(null);
+    try {
+      const res = await callApi('POST', '/api/admin/restore', {
+        confirm: 'RESTORE',
+        backup: restoreFile.payload,
+      });
+      if (res.status !== 200) {
+        throw new Error(String(res.body.error || 'فشلت الاستعادة'));
+      }
+      await persistNow();
+      setRestoreDone(
+        `تمت استعادة ${res.body.tables_count} جدولاً و${res.body.total_rows} صفاً. أعد تحميل الصفحة لرؤية البيانات.`
+      );
+      setRestorePreview(null);
+      setRestoreFile(null);
+      void offlineStorageBytes().then(setBytes);
+    } catch (err) {
+      setRestoreError(err instanceof Error ? err.message : 'فشلت الاستعادة');
     } finally {
       setBusy(null);
     }
@@ -203,6 +297,153 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
               )}
               <span>تنزيل نسخة احتياطية كاملة</span>
             </button>
+
+            {/* ── استعادة نسخة احتياطية ── */}
+            <input
+              id="plus-restore-file"
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) void pickRestoreFile(f);
+              }}
+            />
+
+            {!restorePreview && !restoreDone && (
+              <button
+                onClick={() => document.getElementById('plus-restore-file')?.click()}
+                disabled={busy !== null}
+                className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+              >
+                {busy === 'preview' ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5 text-[#D4AF37]" />
+                )}
+                <span>استعادة نسخة احتياطية</span>
+              </button>
+            )}
+
+            {restoreDone && (
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2">
+                <p className="text-[11px] text-emerald-200 leading-relaxed flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <span>{restoreDone}</span>
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full py-2 rounded-lg text-xs font-bold bg-emerald-600/80 hover:bg-emerald-600 text-white cursor-pointer"
+                >
+                  إعادة تحميل الصفحة
+                </button>
+              </div>
+            )}
+
+            {restorePreview && (
+              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/40 space-y-2.5">
+                <div className="flex items-start gap-2 text-amber-200">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div className="text-[11px] leading-relaxed">
+                    <b>سيُستبدل كل شيء.</b> هذه الأرقام هي ما سيحدث فعلاً عند التنفيذ — راجعها
+                    قبل الموافقة.
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-[#0E0E14] rounded-lg py-1.5">
+                    <div className="text-xs font-extrabold text-[#F3EDDD] font-mono">
+                      {restorePreview.tables_count}
+                    </div>
+                    <div className="text-[9px] text-[#7E8B84]">جدول</div>
+                  </div>
+                  <div className="bg-[#0E0E14] rounded-lg py-1.5">
+                    <div className="text-xs font-extrabold text-[#F3EDDD] font-mono">
+                      {restorePreview.total_rows.toLocaleString('en-US')}
+                    </div>
+                    <div className="text-[9px] text-[#7E8B84]">صف</div>
+                  </div>
+                  <div className="bg-[#0E0E14] rounded-lg py-1.5">
+                    <div className="text-xs font-extrabold text-[#F3EDDD] font-mono">
+                      {restorePreview.exported_at ? restorePreview.exported_at.slice(0, 10) : '—'}
+                    </div>
+                    <div className="text-[9px] text-[#7E8B84]">تاريخ النسخة</div>
+                  </div>
+                </div>
+
+                {/* الجداول التي ستتغير فعلاً — لا نعرض 37 صفاً بلا داعٍ */}
+                {(() => {
+                  const changed = restorePreview.tables.filter((t) => t.delta !== 0);
+                  if (!changed.length) {
+                    return (
+                      <p className="text-[10px] text-[#9E9682] leading-relaxed">
+                        محتوى النسخة مطابق للبيانات الحالية — تنفيذها لن يغيّر شيئاً.
+                      </p>
+                    );
+                  }
+                  return (
+                    <div className="max-h-32 overflow-y-auto rounded-lg bg-[#0E0E14] divide-y divide-[#1E1E28]">
+                      {changed.slice(0, 20).map((t) => (
+                        <div
+                          key={t.table}
+                          className="flex items-center justify-between px-2 py-1 text-[10px]"
+                        >
+                          <span className="text-[#C9C1AC] font-mono" dir="ltr">
+                            {t.table}
+                          </span>
+                          <span
+                            className={
+                              t.delta > 0 ? 'text-emerald-300 font-mono' : 'text-red-300 font-mono'
+                            }
+                            dir="ltr"
+                          >
+                            {t.current_rows} → {t.incoming_rows}
+                          </span>
+                        </div>
+                      ))}
+                      {changed.length > 20 && (
+                        <div className="px-2 py-1 text-[10px] text-[#7E8B84]">
+                          و{changed.length - 20} جدولاً آخر…
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {restorePreview.warnings.map((w) => (
+                  <p key={w} className="text-[10px] text-amber-300/90 leading-relaxed">
+                    ⚠ {w}
+                  </p>
+                ))}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void runRestore()}
+                    disabled={busy !== null}
+                    className="flex-1 py-2 rounded-lg text-xs font-bold bg-red-600/80 hover:bg-red-600 text-white cursor-pointer disabled:opacity-50"
+                  >
+                    {busy === 'restore' ? 'جارٍ الاستعادة…' : 'نعم، استعد'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRestorePreview(null);
+                      setRestoreFile(null);
+                    }}
+                    disabled={busy !== null}
+                    className="flex-1 py-2 rounded-lg text-xs font-bold bg-[#13131A] border border-[#D4AF37]/25 text-[#E2DAC6] cursor-pointer disabled:opacity-50"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {restoreError && (
+              <div className="p-3 rounded-xl bg-red-950/30 border border-red-500/40">
+                <p className="text-[11px] text-red-200 leading-relaxed">{restoreError}</p>
+              </div>
+            )}
 
             {!confirmReset ? (
               <button
