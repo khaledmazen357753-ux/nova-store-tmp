@@ -79,7 +79,14 @@ async function main() {
 
   check('الوضع الافتراضي أوفلاين', api.getDataMode() === 'offline');
   check('المخطط كامل', st.meta.tables === 37, `${st.meta.tables} جدول`);
-  check('كل المسارات مركّبة', st.meta.routes === 74, `${st.meta.routes} مسار`);
+  // رقم متوقع دقيق كان يفشل عند كل مسار جديد بلا معنى — نتحقق أن كل راوتر
+  // مركّب فعلاً وأن المجموع يطابق مجموع مساراته (فلا مسار يسقط بصمت).
+  const mountedTotal = st.routers.reduce((n, r) => n + r.routes.length, 0);
+  check(
+    'كل المسارات مركّبة',
+    st.meta.routes === mountedTotal && st.routers.length === 5,
+    `${st.meta.routes} مسار من ${st.routers.length} راوتر`
+  );
   check('المحرك المحاسبي محمَّل', typeof st.engine.postJournalEntryRaw === 'function',
     `${Object.keys(st.engine).length} دالة`);
   check('التهيئة سريعة', bootMs < 3000, `${bootMs}ms`);
@@ -368,6 +375,82 @@ async function main() {
   );
   check('القراءة مسموحة في التبويب الثاني', readerCanRead === true);
   check('لم تُحفظ أي فاتورة من التبويب المرفوض', readerSawInvoice === true);
+
+  // ── 14) الاستعادة في الوضع الأوفلاين ─────────────────────────
+  // نسخة احتياطية بلا استعادة = وهم أمان. نتحقق أن المسار يعمل في المتصفح
+  // بنفس الصلابة: معاينة، رفض ملف تالف، وتراجع تام عند الفشل.
+  const st3 = st2;
+  const bridgeFresh = await import(pathToFileURL(path.join(TMP2, 'offline/bridge.js')).href);
+
+  // نستخدم التوكن الحقيقي (لا نمرّر حرفاً فارغاً — فيفشل التحقق بلا سبب)
+  const authHeaders = { authorization: `Bearer ${login.token}` };
+  const callBridge = (method, p, body) =>
+    bridgeFresh.dispatch(st3.routers, method, p, { headers: authHeaders, body });
+
+  const snap = (await callBridge('GET', '/api/admin/backup')).body;
+
+  check(
+    'نسخة أوفلاين تُنشأ',
+    Boolean(snap?.data) && Object.keys(snap.data).length > 30,
+    `${Object.keys(snap?.data || {}).length} جدولاً`
+  );
+
+  const preview = await callBridge('POST', '/api/admin/restore/preview', snap);
+  check(
+    'معاينة الاستعادة أوفلاين',
+    preview.status === 200 && preview.body?.ok === true,
+    preview.status === 200
+      ? `${preview.body.total_rows} صفاً · ${preview.body.tables_count} جدولاً`
+      : String(preview.body?.error || '').slice(0, 60)
+  );
+
+  const noConfirm = await callBridge('POST', '/api/admin/restore', { backup: snap });
+  check(
+    'الاستعادة ترفض بلا تأكيد صريح',
+    noConfirm.status === 400,
+    String(noConfirm.body?.error || '').slice(0, 50)
+  );
+
+  const badFile = await callBridge('POST', '/api/admin/restore', {
+    confirm: 'RESTORE',
+    backup: { data: { customers: 'ليس-قائمة' } },
+  });
+  check(
+    'الاستعادة ترفض ملفاً تالفاً',
+    badFile.status === 400,
+    String(badFile.body?.error || '').slice(0, 50)
+  );
+
+  const countNow = () => st3.db.prepare(`SELECT COUNT(*) AS c FROM customers`).get().c;
+  const custBeforeRestore = countNow();
+
+  // نسخة تفرّغ العملاء ثم تفشل في منتصفها → يجب ألا يُحذف عميل واحد
+  const evil = JSON.parse(JSON.stringify(snap));
+  evil.data.customers = [];
+  evil.data.users = [{ id: 1, username: null, role_code: 'ADMIN', is_active: 1 }];
+  const failed = await callBridge('POST', '/api/admin/restore', { confirm: 'RESTORE', backup: evil });
+  check(
+    'الاستعادة الفاشلة تُبلَّغ كخطأ',
+    failed.status === 400,
+    String(failed.body?.error || '').slice(0, 40)
+  );
+  check(
+    'الفشل لم يحذف أي عميل (تراجع تام)',
+    countNow() === custBeforeRestore,
+    `${custBeforeRestore} → ${countNow()}`
+  );
+
+  const good = await callBridge('POST', '/api/admin/restore', { confirm: 'RESTORE', backup: snap });
+  check(
+    'الاستعادة السليمة تنجح أوفلاين',
+    good.status === 200 && good.body?.ok === true,
+    String(good.body?.message || good.body?.error || '').slice(0, 40)
+  );
+  check(
+    'البيانات سليمة بعد الاستعادة',
+    countNow() === custBeforeRestore,
+    `${countNow()} عميل`
+  );
 
   // ── الخلاصة ────────────────────────────────────────────────
   const passed = results.filter((r) => r.ok).length;
