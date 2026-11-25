@@ -20,6 +20,8 @@ const TMP = path.join(ROOT, 'node_modules', '.offline-verify');
 // نسختان منفصلتان من الحزمة: الثانية تحاكي إعادة تحميل الصفحة بدقة
 // (وحدات JS جديدة تماماً + نفس IndexedDB — وهو ما يحدث فعلياً في المتصفح)
 const TMP2 = path.join(ROOT, 'node_modules', '.offline-verify-2');
+// نسخة ثالثة تحاكي تبويباً ثانياً لم يُهيَّأ بعد
+const TMP3 = path.join(ROOT, 'node_modules', '.offline-verify-3');
 
 const results = [];
 function check(name, ok, extra = '') {
@@ -34,11 +36,11 @@ async function main() {
     execSync('npm install -D fake-indexeddb --no-audit --no-fund', { cwd: ROOT, stdio: 'ignore' });
   }
 
-  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/lib/api.ts src/generated/engineBundle.ts';
+  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/lib/api.ts src/generated/engineBundle.ts';
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
-  rmSync(TMP2, { recursive: true, force: true });
-  for (const out of [TMP, TMP2]) {
+  rmSync(TMP3, { recursive: true, force: true });
+  for (const out of [TMP, TMP2, TMP3]) {
     execSync(
       `npx esbuild ${ENTRY} --format=cjs --platform=node --outbase=src --outdir=${JSON.stringify(
         out
@@ -212,6 +214,64 @@ async function main() {
   );
   check('الفاتورة المحفوظة موجودة بعد إعادة التحميل', found);
 
+  // ── 10) حماية التبويبات المتعددة ────────────────────────────
+  // Node لا يوفر Web Locks، فنحقن بديلاً يحاكي الحالة الواقعية:
+  // القفل محجوز لتبويب آخر، فلا يُمنح لهذا التبويب أبداً.
+  const engineMod3 = await import(pathToFileURL(path.join(TMP3, 'offline/engine.js')).href);
+  check('دالة canWrite متاحة', typeof engineMod3.canWrite === 'function');
+
+  const realNavigator = globalThis.navigator;
+  Object.defineProperty(globalThis, 'navigator', {
+    value: {
+      onLine: true,
+      locks: {
+        // لا يستدعي رد النداء أبداً — تماماً كأن تبويباً آخر يملك القفل
+        request: () => new Promise(() => {}),
+      },
+    },
+    configurable: true,
+  });
+
+  const readerEngine = await import(pathToFileURL(path.join(TMP3, 'offline/engine.js')).href);
+  const readerApi = await import(pathToFileURL(path.join(TMP3, 'lib/api.js')).href);
+  await readerEngine.initOfflineEngine();
+
+  const readerCanWrite = readerEngine.canWrite();
+  let readerRefused = null;
+  try {
+    await readerApi.apiFetch('/api/transactions/sales-invoices', {
+      method: 'POST',
+      body: JSON.stringify({
+        invoice_no: 'SINV-READER',
+        invoice_date: '2026-11-19',
+        employee_code: 'EMP-001',
+        customer_id: 'CUST-001',
+        payment_method: 'آجل',
+        items: [{ item_code: 'ITM-101', quantity: 1, unit_price: 1, discount_percent: 0 }],
+      }),
+    });
+  } catch (e) {
+    readerRefused = e;
+  }
+
+  let readerCanRead = false;
+  try {
+    await readerApi.apiFetch('/api/reports/dashboard');
+    readerCanRead = true;
+  } catch {
+    readerCanRead = false;
+  }
+
+  Object.defineProperty(globalThis, 'navigator', { value: realNavigator, configurable: true });
+
+  check('التبويب الثاني يصبح قارئاً', readerCanWrite === false);
+  check(
+    'الكتابة مرفوضة في التبويب الثاني',
+    readerRefused?.code === 'READ_ONLY_TAB',
+    readerRefused ? `${readerRefused.status} ${readerRefused.code}` : 'سُمح بالكتابة ❌'
+  );
+  check('القراءة مسموحة في التبويب الثاني', readerCanRead === true);
+
   // ── الخلاصة ────────────────────────────────────────────────
   const passed = results.filter((r) => r.ok).length;
   const total = results.length;
@@ -221,6 +281,7 @@ async function main() {
 
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
+  rmSync(TMP3, { recursive: true, force: true });
   process.exit(passed === total ? 0 : 1);
 }
 
