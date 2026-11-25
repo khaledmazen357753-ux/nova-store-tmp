@@ -19,6 +19,7 @@ import { PlusBrandLockup, PlusCrossEmblem, PlusSpinner, PlusWatermark } from './
 import { LoginScreen } from './components/LoginScreen';
 import { DataModeBadge } from './components/DataModeBadge';
 import { OfflineSettings } from './components/OfflineSettings';
+import { ReadOnlyTabBanner } from './components/ReadOnlyTabBanner';
 import { DashboardModule, ModuleKey } from './modules/DashboardModule';
 import { MasterDataModule } from './modules/MasterDataModule';
 import { FinanceModule } from './modules/FinanceModule';
@@ -221,6 +222,8 @@ export const App: React.FC = () => {
             </div>
           </div>
         </header>
+
+        <ReadOnlyTabBanner />
 
         {/* ساحة العرض */}
         <main className="p-4 md:p-7 flex-1">

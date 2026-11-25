@@ -14,7 +14,7 @@ import { SCHEMA_SQL, ACCOUNTING_ENGINE_SOURCE, SERVER_BUNDLE } from '../generate
 import { createOfflineDb, storedBytes, type OfflineDb } from './db';
 import { createExpressStub, dispatch as bridgeDispatch, type RouterRecord } from './bridge';
 import * as cryptoTools from './sha256';
-import { getDeviceTag } from './tabLock';
+import { getDeviceTag, claimWriteLock, isWriterTab, onBecomeWriter } from './tabLock';
 
 /** الواجهة التي تعرضها حزمة الخادم بعد التحميل */
 interface ServerBundle {
@@ -103,7 +103,17 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
       server.seedDatabase(freshDb);
     });
 
-    // ── د) تركيب الراوترات بنفس ترتيب server.js ────────────────
+    // ── د) قفل الكتابة: تبويب واحد فقط يكتب ──────────────────────
+    // بدونه يحفظ تبويبان صورتهما الكاملة للقاعدة فوق بعضهما فيضيع عمل أحدهما.
+    // النداء هنا *بعد* إنشاء القاعدة لأنه قد يولّد رمز الجهاز.
+    await claimWriteLock();
+
+    // إن صرنا كاتبات لاحقاً (أُغلق التبويب الكاتب) نعيد التحميل لنقرأ عمله
+    onBecomeWriter(() => {
+      window.location.reload();
+    });
+
+    // ── هـ) تركيب الراوترات بنفس ترتيب server.js ────────────────
     const auth = server.auth as unknown as Record<string, (...args: unknown[]) => unknown>;
     const authenticate = auth.createAuthMiddleware(db);
     const mounted: RouterRecord[] = [];
@@ -154,6 +164,14 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
     initPromise = null;
     throw err;
   }
+}
+
+/**
+ * هل يمكن الكتابة من هذا التبويب؟
+ * التبويبات غير النشطة تفتح للعرض فقط لحماية البيانات من الضياع.
+ */
+export function canWrite(): boolean {
+  return isWriterTab();
 }
 
 /** يعيد حالة النظام بعد التهيئة (أو null) */

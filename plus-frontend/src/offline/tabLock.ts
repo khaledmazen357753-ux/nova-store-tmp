@@ -23,3 +23,103 @@ export function getDeviceTag(): string {
   localStorage.setItem(DEVICE_TAG_KEY, tag);
   return tag;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * قفل الكتابة بين تبويبات المتصفح
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ * المشكلة: قاعدة البيانات تعيش في ذاكرة كل تبويب مستقلة. لو فتح المستخدم
+ * النظام في تبويبين وأضاف كلٌّ منهما فاتورة، فكلٌّ يحفظ **صورته الكاملة**
+ * للقاعدة فوق الأخرى — فيضيع عمل التبويب الآخر بلا أي رسالة.
+ *
+ * الحل: التبويب الأول فقط يحصل على قفل الكتابة. البقية تفتح للعرض فقط
+ * وتُظهر شريطاً صريحاً، وأي محاولة حفظ منها تُرفض قبل الوصول للمحرك.
+ *
+ * يعتمد على Web Locks API (مدعوم في كل المتصفحات الحديثة). إن غاب،
+ * نسمح بالكتابة بدل تعطيل النظام كله.
+ */
+
+const WRITE_LOCK = 'plus_erp_db_writer';
+
+let writerTab = false;
+let writerListeners: ((writer: boolean) => void)[] = [];
+let becomeWriterHook: (() => void) | null = null;
+
+/** يُبلّغ كل المستمعين بتغيّر حالة الكتابة */
+function setWriterState(next: boolean) {
+  if (writerTab === next) return;
+  writerTab = next;
+  writerListeners.forEach((fn) => fn(next));
+}
+
+/** يستمع لتغيّر حالة الكتابة. يعيد دالة لإلغاء الاشتراك. */
+export function onWriterChange(fn: (writer: boolean) => void) {
+  writerListeners.push(fn);
+  fn(writerTab);
+  return () => {
+    writerListeners = writerListeners.filter((l) => l !== fn);
+  };
+}
+
+/**
+ * يُنادى عندما يصبح هذا التبويب كاتباً بعد أن كان قارئاً (أي أُغلق الكاتب
+ * السابق). المحرك يستخدمه لإعادة تحميل الصفحة حتى يقرأ كل ما كُتب.
+ */
+export function onBecomeWriter(fn: () => void) {
+  becomeWriterHook = fn;
+}
+
+/** هل هذا التبويب هو الكاتب الآن؟ */
+export function isWriterTab(): boolean {
+  return writerTab;
+}
+
+/**
+ * يطلب قفل الكتابة. يعيد true إن كان هذا التبويب هو الكاتب.
+ *
+ * ملاحظة على التوقيت: منح القفل يحدث داخل رد نداء غير متزامن، لذلك لا
+ * يكفي فحص المتغيّر مباشرة بعد الطلب. ننتظر إما المنح الفعلي أو مهلة
+ * قصيرة، فأي فحص مبكر كان يرجع حالة قديمة خاطئة.
+ */
+export function claimWriteLock(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !('locks' in navigator)) {
+    // لا يوجد Web Locks — نسمح بالكتابة ونترك التحذير للمستخدم
+    setWriterState(true);
+    return Promise.resolve(true);
+  }
+
+  let grantResolve: (() => void) | null = null;
+  const granted = new Promise<void>((res) => {
+    grantResolve = res;
+  });
+
+  // نحتفظ بالقفل ما دام التبويب مفتوحاً (لا نُعيد الوعد أبداً)
+  void navigator.locks.request(WRITE_LOCK, { mode: 'exclusive' }, () => {
+    setWriterState(true);
+    grantResolve?.();
+    return new Promise<void>(() => {
+      /* يُحرَّر القفل عند إغلاق التبويب أو إعادة تحميله فقط */
+    });
+  });
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      // انتهت المهلة ولم نُمنح القفل → تبويب آخر هو الكاتب
+      setWriterState(false);
+
+      // نراقب تحرّر القفل: إن أُغلق التبويب الكاتب نأخذه ونعيد التحميل
+      void navigator.locks.request(WRITE_LOCK, { mode: 'exclusive' }, () => {
+        setWriterState(true);
+        if (becomeWriterHook) becomeWriterHook();
+        return new Promise<void>(() => {});
+      });
+
+      resolve(false);
+    }, 400);
+
+    void granted.then(() => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+}
