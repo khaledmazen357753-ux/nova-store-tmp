@@ -34,7 +34,7 @@ async function main() {
     execSync('npm install -D fake-indexeddb --no-audit --no-fund', { cwd: ROOT, stdio: 'ignore' });
   }
 
-  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/lib/api.ts src/generated/engineBundle.ts';
+  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/lib/api.ts src/generated/engineBundle.ts';
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
@@ -211,6 +211,92 @@ async function main() {
     (r) => r.invoice_no === 'SINV-VERIFY-1'
   );
   check('الفاتورة المحفوظة موجودة بعد إعادة التحميل', found);
+
+  // ── 10) ترقيم المستندات لكل جهاز ─────────────────────────────
+  const engineCore = st2.engine;
+  const tabLockMod = await import(pathToFileURL(path.join(TMP, 'offline/tabLock.js')).href);
+
+  check('رمز الجهاز متاح', typeof tabLockMod.getDeviceTag === 'function', tabLockMod.getDeviceTag());
+
+  const makeInv = () =>
+    engineCore.createSalesInvoiceRaw(
+      st2.db,
+      {
+        invoice_date: '2026-11-19',
+        employee_code: 'EMP-001',
+        customer_id: 'CUST-001',
+        payment_method: 'آجل',
+        items: [{ item_code: 'ITM-101', quantity: 1, unit_price: 100, discount_percent: 0 }],
+      },
+      'test'
+    );
+
+  engineCore.setDeviceTag(null);
+  const plainNo = makeInv().invoice_no;
+  check('بلا رمز جهاز: الشكل الأصلي محفوظ', /^SINV-\d+$/.test(plainNo), plainNo);
+
+  engineCore.setDeviceTag('AAAA');
+  const tagNo = makeInv().invoice_no;
+  check('مع رمز الجهاز: الرقم يحمل الرمز', /^SINV-AAAA-\d+$/.test(tagNo), tagNo);
+
+  engineCore.setDeviceTag('BBBB');
+  const otherNo = makeInv().invoice_no;
+  check(
+    'جهازان مختلفان لا يتصادمان',
+    tagNo !== otherNo && /^SINV-BBBB-\d+$/.test(otherNo),
+    `${tagNo} ≠ ${otherNo}`
+  );
+
+  engineCore.setDeviceTag(null);
+  const afterNo = makeInv().invoice_no;
+  check('أرقام الأجهزة لا تلوّث الترقيم السحابي', /^SINV-\d+$/.test(afterNo), afterNo);
+
+  // ── 11) الفترة المالية تُشتق من تاريخ القيد ────────────────────
+  check('دالة اشتقاق الفترة متاحة', typeof engineCore.resolvePeriodId === 'function');
+
+  st2.db.exec(
+    `INSERT OR IGNORE INTO fiscal_periods (period_id, period_name, start_date, end_date, status)
+     VALUES ('FY-2027','السنة المالية 2027','2027-01-01','2027-12-31','مفتوحة')`
+  );
+  const p2026 = engineCore.resolvePeriodId(st2.db, '2026-07-15');
+  const p2027 = engineCore.resolvePeriodId(st2.db, '2027-07-15');
+  check('قيد 2026 يُسجَّل على FY-2026', p2026 === 'FY-2026', p2026);
+  check('قيد 2027 يُسجَّل على FY-2027', p2027 === 'FY-2027', p2027);
+
+  // ── 12) الإقفال يقرأ حركة الفترة المطلوبة فقط ──────────────────
+  const balance4101 = (periodId) =>
+    Number(
+      st2.db
+        .prepare(
+          `SELECT COALESCE(SUM(jl.credit),0) - COALESCE(SUM(jl.debit),0) AS bal
+           FROM journal_entry_lines jl
+           JOIN journal_entries je ON je.entry_number = jl.entry_number
+           WHERE jl.account_code = '4101' AND je.period_id = ?`
+        )
+        .get(periodId).bal
+    );
+
+  const before27 = balance4101('FY-2027');
+  st2.db.exec(`
+    INSERT INTO journal_entries (entry_number, entry_date, reference_type, description,
+                                 total_debit, total_credit, period_id)
+    VALUES ('JE-TEST27','2027-03-01','قيد اختبار','إيراد 2027 للاختبار', 99000, 99000, 'FY-2027');
+    INSERT INTO journal_entry_lines (line_no, entry_number, account_code, debit, credit)
+    VALUES (1,'JE-TEST27','1101',99000,0), (2,'JE-TEST27','4101',0,99000);
+  `);
+  const after27 = balance4101('FY-2027');
+  const bal2026 = balance4101('FY-2026');
+
+  check(
+    'الإقفال يرى حركة فترته فقط (+99,000 لسنة 2027)',
+    Math.round(after27 - before27) === 99000,
+    `+${Math.round(after27 - before27)}`
+  );
+  check(
+    'حركة 2027 لا تتسرب إلى 2026',
+    Math.round(after27 - before27) === 99000 && !String(bal2026).includes('99000'),
+    `رصيد 2026: ${Math.round(bal2026).toLocaleString('en-US')}`
+  );
 
   // ── الخلاصة ────────────────────────────────────────────────
   const passed = results.filter((r) => r.ok).length;

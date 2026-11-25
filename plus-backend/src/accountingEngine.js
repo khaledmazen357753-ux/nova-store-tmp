@@ -5,15 +5,48 @@ function computeReorderPoint(annualDemand, leadTimeDays, safetyStock) {
   return Math.ceil(daily * Number(leadTimeDays || 0) + Number(safetyStock || 0));
 }
 
+/**
+ * يكتب رمز الجهاز — يُضاف إلى أرقام المستندات في النسخة الأوفلاين فقط.
+ *
+ * السبب: كل جهاز أوفلاين له قاعدته المستقلة، فكلها كانت تبدأ الترقيم من
+ * 1001 وتنتج نفس الأرقام (SINV-1001 على كل جهاز). عند المزامنة تتصادم
+ * المفاتيح الأساسية وتفشل عملية النقل.
+ *
+ * بادئة جهاز قصيرة وفريدة لكل متصفح تجعل التضارب مستحيلاً بدل أن نضطر
+ * إلى "حل تعارض" بعد حدوثه.
+ *
+ * على الخادم/السحابي تبقى القيمة null فلا يتغيّر شكل الأرقام إطلاقاً.
+ */
+let deviceTag = null;
+function setDeviceTag(tag) {
+  const clean = tag == null ? null : String(tag).trim().toUpperCase();
+  deviceTag = clean && /^[A-Z0-9]{1,8}$/.test(clean) ? clean : null;
+}
+function getDeviceTag() {
+  return deviceTag;
+}
+
+/**
+ * يولّد رقم المستند التالي.
+ * الشكل الافتراضي (خادم/سحابي):  PREFIX-1001
+ * الشكل الأوفلاين (بجهاز):      PREFIX-XXXX-1001
+ * حيث XXXX رمز الجهاز، ويُحسب الحد الأقصى داخل نطاق الجهاز نفسه فقط.
+ */
 function nextDocNumber(db, table, column, prefix) {
-  const rows = db.prepare(`SELECT ${column} AS code FROM ${table} WHERE ${column} LIKE ?`).all(`${prefix}-%`);
+  const tag = deviceTag;
+  const scopePrefix = tag ? `${prefix}-${tag}-` : `${prefix}-`;
+
+  const rows = db.prepare(`SELECT ${column} AS code FROM ${table} WHERE ${column} LIKE ?`).all(
+    `${scopePrefix}%`
+  );
+
   let maxNum = 1000;
   for (const r of rows) {
     const parts = String(r.code).split('-');
     const num = parseInt(parts[parts.length - 1], 10);
     if (!Number.isNaN(num) && num > maxNum) maxNum = num;
   }
-  return `${prefix}-${maxNum + 1}`;
+  return `${scopePrefix}${maxNum + 1}`;
 }
 
 function runInTransaction(db, fn) {
@@ -73,6 +106,37 @@ function getSupplierBalance(db, supplierId) {
   };
 }
 
+/**
+ * يحدد الفترة المالية التي يقع فيها تاريخ معيّن.
+ *
+ * لولا هذا، كانت كل القيود تُسجَّل على 'FY-2026' افتراضياً حتى لو كان
+ * تاريخها في 2027 — فيختلط إقفال الفترات وتصبح تقارير كل سنة غير دقيقة.
+ * الترتيب: أولاً الفترة التي يقع التاريخ داخل نطاقها فعلاً، وإلا أحدث
+ * فترة مفتوحة، وإلا القيمة الافتراضية.
+ */
+function resolvePeriodId(db, entryDate) {
+  if (!entryDate) return 'FY-2026';
+  try {
+    const byDate = db.prepare(`
+      SELECT period_id FROM fiscal_periods
+      WHERE ? BETWEEN start_date AND end_date
+      ORDER BY start_date DESC LIMIT 1
+    `).get(entryDate);
+    if (byDate) return byDate.period_id;
+
+    // تاريخ خارج كل الفترات المعرّفة: نستخدم أحدث فترة مفتوحة
+    const open = db.prepare(`
+      SELECT period_id FROM fiscal_periods
+      WHERE status = 'مفتوحة'
+      ORDER BY start_date DESC LIMIT 1
+    `).get();
+    if (open) return open.period_id;
+  } catch {
+    /* إن لم يوجد الجدول لأي سبب نعود للافتراضي */
+  }
+  return 'FY-2026';
+}
+
 function postJournalEntryRaw(db, {
   entry_number,
   entry_date,
@@ -80,9 +144,12 @@ function postJournalEntryRaw(db, {
   reference_no = null,
   description,
   lines,
-  period_id = 'FY-2026',
+  period_id,
   created_by = 'النظام',
 }) {
+
+  // الفترة تُشتق من تاريخ القيد إن لم تُمرَّر صراحةً
+  const resolvedPeriodId = period_id || resolvePeriodId(db, entry_date);
   if (!Array.isArray(lines) || lines.length < 2) {
     const err = new Error('يجب أن يحتوي القيد المحاسبي على طرفين على الأقل (مدين ودائن)');
     err.status = 400;
@@ -144,7 +211,7 @@ function postJournalEntryRaw(db, {
   db.prepare(`
     INSERT INTO journal_entries (entry_number, entry_date, reference_type, reference_no, description, total_debit, total_credit, period_id, created_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(finalNo, entry_date, reference_type, reference_no, description, totalDebit, totalCredit, period_id, created_by);
+  `).run(finalNo, entry_date, reference_type, reference_no, description, totalDebit, totalCredit, resolvedPeriodId, created_by);
 
   const insertLine = db.prepare(`
     INSERT INTO journal_entry_lines (line_no, entry_number, account_code, debit, credit, notes)
@@ -475,6 +542,9 @@ module.exports = {
   round2,
   computeReorderPoint,
   nextDocNumber,
+  resolvePeriodId,
+  setDeviceTag,
+  getDeviceTag,
   runInTransaction,
   getCustomerBalance,
   getSupplierBalance,

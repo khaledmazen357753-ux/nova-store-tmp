@@ -14,6 +14,7 @@ import { SCHEMA_SQL, ACCOUNTING_ENGINE_SOURCE, SERVER_BUNDLE } from '../generate
 import { createOfflineDb, storedBytes, type OfflineDb } from './db';
 import { createExpressStub, dispatch as bridgeDispatch, type RouterRecord } from './bridge';
 import * as cryptoTools from './sha256';
+import { getDeviceTag } from './tabLock';
 
 /** الواجهة التي تعرضها حزمة الخادم بعد التحميل */
 interface ServerBundle {
@@ -87,6 +88,11 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
     // ── ب) تحميل كود الخادم ────────────────────────────────────
     const server = loadServerBundle();
     const engine = loadAccountingEngine();
+
+    // رمز الجهاز: يجعل أرقام المستندات فريدة لكل متصفح، فلا تتصادم عند
+    // المزامنة مستقبلاً. لا أثر له في الوضع السحابي.
+    const setDeviceTag = engine.setDeviceTag as ((tag: string | null) => void) | undefined;
+    if (typeof setDeviceTag === 'function') setDeviceTag(getDeviceTag());
 
     if (typeof server.seedDatabase !== 'function') {
       throw new Error('حزمة الخادم لا تحتوي على دالة الزراعة — أعد بناء الحزمة');
