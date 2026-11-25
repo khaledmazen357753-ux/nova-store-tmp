@@ -1,0 +1,40 @@
+{
+  "name": "المحاسبي Plus — نظام المعلومات المحاسبية المتكامل",
+  "short_name": "المحاسبي Plus",
+  "description": "منظومة ERP محاسبية كاملة تعمل بدون إنترنت: محرك الحسابات والتقارير يعمل داخل جهازك.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#060608",
+  "theme_color": "#060608",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/plus-logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

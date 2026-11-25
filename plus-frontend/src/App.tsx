@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Settings2,
   LayoutDashboard,
   Database,
   Landmark,
@@ -16,6 +17,8 @@ import {
 import { apiFetch, getStoredToken, setStoredToken } from './lib/api';
 import { PlusBrandLockup, PlusCrossEmblem, PlusSpinner, PlusWatermark } from './components/BrandIdentity';
 import { LoginScreen } from './components/LoginScreen';
+import { DataModeBadge } from './components/DataModeBadge';
+import { OfflineSettings } from './components/OfflineSettings';
 import { DashboardModule, ModuleKey } from './modules/DashboardModule';
 import { MasterDataModule } from './modules/MasterDataModule';
 import { FinanceModule } from './modules/FinanceModule';
@@ -43,6 +46,7 @@ export const App: React.FC = () => {
   const [company, setCompany] = useState<any>(null);
   const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -169,6 +173,13 @@ export const App: React.FC = () => {
             </div>
           </div>
           <button
+            onClick={() => setSettingsOpen(true)}
+            className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+          >
+            <Settings2 className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>إعدادات البيانات والتخزين</span>
+          </button>
+          <button
             onClick={() => {
               setStoredToken(null);
               setUser(null);
@@ -203,6 +214,7 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <DataModeBadge />
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#101016] border border-[#D4AF37]/25 text-xs">
               <PlusCrossEmblem size={20} idPrefix="hdr-cross" className={transitioning ? 'animate-plus-spin-fast' : ''} />
               <span className="font-royal text-[#E5C158] font-bold">PLUS ERP</span>
@@ -228,6 +240,8 @@ export const App: React.FC = () => {
           )}
         </main>
       </div>
+
+      <OfflineSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 };

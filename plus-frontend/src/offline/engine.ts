@@ -1,0 +1,174 @@
+/**
+ * تشغيل «العقل المحاسبي» داخل المتصفح.
+ *
+ * هذا الملف هو نقطة الالتقاء بين:
+ *   • قاعدة بيانات SQLite حقيقية في المتصفح (sql.js + IndexedDB)
+ *   • نفس كود الخادم المحاسبي (accountingEngine + routes/*.js + seedDatabase)
+ *
+ * ويقدّم للمتصفح نفس شكل REST API الذي تستهلكه الواجهة، فيعمل النظام
+ * كاملاً أوفلاين: يحسب القيود، يرحّل الفواتير، يقفل الفترات، ويولّد
+ * التقارير — كل ذلك محلياً على الجهاز بلا أي اتصال.
+ */
+
+import { SCHEMA_SQL, ACCOUNTING_ENGINE_SOURCE, SERVER_BUNDLE } from '../generated/engineBundle';
+import { createOfflineDb, storedBytes, type OfflineDb } from './db';
+import { createExpressStub, dispatch as bridgeDispatch, type RouterRecord } from './bridge';
+import * as cryptoTools from './sha256';
+
+/** الواجهة التي تعرضها حزمة الخادم بعد التحميل */
+interface ServerBundle {
+  seedDatabase(db: OfflineDb): void;
+  createAuthRouter(db: OfflineDb, authenticate: unknown): unknown;
+  createMasterRouter(db: OfflineDb, authenticate: unknown): unknown;
+  createTransactionsRouter(db: OfflineDb, authenticate: unknown): unknown;
+  createReportsRouter(db: OfflineDb, authenticate: unknown): unknown;
+  createAdminRouter(db: OfflineDb, authenticate: unknown): unknown;
+  auth: Record<string, unknown>;
+}
+
+export interface OfflineEngineState {
+  db: OfflineDb;
+  routers: RouterRecord[];
+  engine: Record<string, unknown>;
+  auth: Record<string, (...args: unknown[]) => unknown>;
+  meta: {
+    tables: number;
+    routes: number;
+    isNew: boolean;
+    builtAt: string;
+    seedBytes: number;
+  };
+}
+
+let state: OfflineEngineState | null = null;
+let initPromise: Promise<OfflineEngineState> | null = null;
+
+/**
+ * 1) يحمّل `plus-backend/src/accountingEngine.js` **كنص أصلي** وينفّذه.
+ *    نفس الملف، نفس الدوال، بلا أي تعديل — هذه هي الحسبة المحاسبية الحقيقية.
+ */
+function loadAccountingEngine(): Record<string, unknown> {
+  const moduleObj: { exports: Record<string, unknown> } = { exports: {} };
+  // eslint-disable-next-line no-new-func
+  const factory = new Function('module', 'exports', ACCOUNTING_ENGINE_SOURCE);
+  factory(moduleObj, moduleObj.exports);
+  return moduleObj.exports;
+}
+
+/** 2) ينفّذ حزمة الخادم (db + auth + routes) التي بُنيت خصيصاً للمتصفح */
+function loadServerBundle(): ServerBundle {
+  const moduleObj: { exports: Record<string, unknown> } = { exports: {} };
+  // eslint-disable-next-line no-new-func
+  const factory = new Function('module', 'exports', SERVER_BUNDLE);
+  factory(moduleObj, moduleObj.exports);
+  return moduleObj.exports as unknown as ServerBundle;
+}
+
+/**
+ * يهيّئ النظام الأوفلاين بالكامل. آمن للاستدعاء أكثر من مرة:
+ * التهيئة تحدث مرة واحدة فقط ويُعاد نفس الوعد بعدها.
+ */
+export async function initOfflineEngine(): Promise<OfflineEngineState> {
+  if (state) return state;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    const started = performance.now();
+
+    // ── أ) حقن بدائل المتصفح قبل تحميل أي كود خادم ─────────────
+    const registry: RouterRecord[] = [];
+    const expressStub = createExpressStub(registry);
+
+    const g = globalThis as Record<string, unknown>;
+    g.__PLUS_CRYPTO__ = cryptoTools;
+    g.__PLUS_EXPRESS__ = expressStub;
+    g.__PLUS_SCHEMA_SQL__ = SCHEMA_SQL;
+
+    // ── ب) تحميل كود الخادم ────────────────────────────────────
+    const server = loadServerBundle();
+    const engine = loadAccountingEngine();
+
+    if (typeof server.seedDatabase !== 'function') {
+      throw new Error('حزمة الخادم لا تحتوي على دالة الزراعة — أعد بناء الحزمة');
+    }
+
+    // ── ج) قاعدة البيانات: تُبنى من المخطط الأصلي وتُزرع ببيانات الخادم ──
+    const { db, isNew } = await createOfflineDb(SCHEMA_SQL, (freshDb) => {
+      server.seedDatabase(freshDb);
+    });
+
+    // ── د) تركيب الراوترات بنفس ترتيب server.js ────────────────
+    const auth = server.auth as unknown as Record<string, (...args: unknown[]) => unknown>;
+    const authenticate = auth.createAuthMiddleware(db);
+    const mounted: RouterRecord[] = [];
+
+    expressStub.__setPrefix('/api/auth');
+    server.createAuthRouter(db, authenticate);
+
+    const mount = (prefix: string, factory: (d: OfflineDb, a: unknown) => unknown) => {
+      expressStub.__setPrefix(prefix);
+      factory(db, authenticate);
+    };
+    mount('/api/master', server.createMasterRouter);
+    mount('/api/transactions', server.createTransactionsRouter);
+    mount('/api/reports', server.createReportsRouter);
+    mount('/api/admin', server.createAdminRouter);
+
+    mounted.push(...registry);
+    const routes = mounted.reduce((sum, r) => sum + r.routes.length, 0);
+
+    state = {
+      db,
+      routers: mounted,
+      engine,
+      auth,
+      meta: {
+        tables: (SCHEMA_SQL.match(/CREATE TABLE/gi) || []).length,
+        routes,
+        isNew,
+        builtAt: new Date().toISOString(),
+        seedBytes: await storedBytes(),
+      },
+    };
+
+    if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
+      console.info(
+        `[Plus Offline] ${state.meta.tables} جدول · ${routes} مسار · ${Math.round(
+          performance.now() - started
+        )}ms${isNew ? ' (بنية جديدة)' : ' (بيانات محفوظة)'}`
+      );
+    }
+
+    return state;
+  })();
+
+  try {
+    return await initPromise;
+  } catch (err) {
+    initPromise = null;
+    throw err;
+  }
+}
+
+/** يعيد حالة النظام بعد التهيئة (أو null) */
+export function offlineState() {
+  return state;
+}
+
+/** يحفظ القاعدة يدوياً على القرص */
+export async function persistNow() {
+  await state?.db.persist();
+}
+
+/** حجم البيانات المحفوظة على الجهاز */
+export async function offlineStorageBytes() {
+  return storedBytes();
+}
+
+/** يمسح كل البيانات ويعيد النظام لحالته الأولى */
+export async function resetOfflineData() {
+  await state?.db.reset();
+  state = null;
+  initPromise = null;
+  window.location.reload();
+}

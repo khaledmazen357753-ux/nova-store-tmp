@@ -1,0 +1,249 @@
+import React, { useEffect, useState } from 'react';
+import { Cloud, Database, Download, HardDrive, RefreshCw, Trash2, X, Check } from 'lucide-react';
+import { getDataMode, setDataMode, setCustomApiBaseUrl, getApiBaseUrl } from '../lib/api';
+import { offlineState, offlineStorageBytes, resetOfflineData, persistNow } from '../offline/engine';
+
+/**
+ * لوحة إعدادات البيانات:
+ *   • نوع التخزين (أوفلاين على الجهاز / سحابي على خادم)
+ *   • حجم القاعدة المحلية وحالة الحفظ
+ *   • نسخة احتياطية كاملة بصيغة JSON قابلة للاستعادة
+ *   • مسح وإعادة تهيئة البيانات
+ */
+export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> = ({
+  open,
+  onClose,
+}) => {
+  const [mode, setMode] = useState<'offline' | 'cloud'>(() => getDataMode());
+  const [cloudUrl, setCloudUrl] = useState<string>(() => getApiBaseUrl());
+  const [bytes, setBytes] = useState<number>(0);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    void offlineStorageBytes().then(setBytes);
+    setConfirmReset(false);
+    setSaved(false);
+  }, [open]);
+
+  if (!open) return null;
+
+  const details = offlineState()?.meta;
+  const kb = Math.round(bytes / 1024);
+
+  const applyMode = (next: 'offline' | 'cloud') => {
+    setMode(next);
+    setDataMode(next);
+    if (next === 'cloud' && cloudUrl.trim()) setCustomApiBaseUrl(cloudUrl.trim());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2200);
+  };
+
+  const saveCloudUrl = () => {
+    setCustomApiBaseUrl(cloudUrl.trim() || null);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2200);
+  };
+
+  const backup = async () => {
+    setBusy('backup');
+    try {
+      await persistNow();
+      const res = await fetch('/api/admin/backup', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('plus_erp_auth_token') || ''}` },
+      }).catch(() => null);
+      // في الوضع الأوفلاين نقرأ مباشرة من الحالة المحلية
+      const st = offlineState();
+      let payload: unknown = null;
+      if (st) {
+        const result = await (
+          await import('../offline/bridge')
+        ).dispatch(st.routers, 'GET', '/api/admin/backup', {
+          headers: { authorization: `Bearer ${localStorage.getItem('plus_erp_auth_token') || ''}` },
+        });
+        payload = result.body;
+      }
+      void res;
+      if (!payload) throw new Error('تعذر إنشاء النسخة');
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `plus-erp-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl bg-[#0B0B10] border border-[#D4AF37]/30 shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#D4AF37]/20">
+          <div className="flex items-center gap-2.5">
+            <Database className="w-4 h-4 text-[#D4AF37]" />
+            <h2 className="text-sm font-extrabold gold-gradient-text">إعدادات البيانات والتخزين</h2>
+          </div>
+          <button onClick={onClose} className="text-[#9E9682] hover:text-[#D4AF37] cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* نوع التخزين */}
+          <div className="space-y-2">
+            <div className="text-[11px] font-bold text-[#9E9682]">مكان تشغيل محرك الحسابات</div>
+            <button
+              onClick={() => applyMode('offline')}
+              className={`w-full text-right p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
+                mode === 'offline'
+                  ? 'bg-emerald-950/30 border-emerald-500/50'
+                  : 'bg-[#101016] border-[#D4AF37]/20 hover:border-[#D4AF37]/40'
+              }`}
+            >
+              <HardDrive className="w-4 h-4 mt-0.5 text-emerald-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold text-[#F3EDDD] flex items-center gap-2">
+                  أوفلاين — على هذا الجهاز
+                  {mode === 'offline' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                </div>
+                <div className="text-[11px] text-[#9E9682] mt-0.5 leading-relaxed">
+                  كل الحسابات والقيود والفواتير تُنفَّذ وتُحفظ داخل المتصفح. يعمل بلا إنترنت تماماً.
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => applyMode('cloud')}
+              className={`w-full text-right p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
+                mode === 'cloud'
+                  ? 'bg-[#1A1608] border-[#D4AF37]/60'
+                  : 'bg-[#101016] border-[#D4AF37]/20 hover:border-[#D4AF37]/40'
+              }`}
+            >
+              <Cloud className="w-4 h-4 mt-0.5 text-[#D4AF37] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold text-[#F3EDDD] flex items-center gap-2">
+                  سحابي — خادم خارجي
+                  {mode === 'cloud' && <Check className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                </div>
+                <div className="text-[11px] text-[#9E9682] mt-0.5 leading-relaxed">
+                  يرسل الطلبات إلى رابط الخادم أدناه. يحتاج اتصالاً بالشبكة دائماً.
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* رابط الخادم */}
+          {mode === 'cloud' && (
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-bold text-[#9E9682]">رابط خادم البيانات</div>
+              <div className="flex gap-2">
+                <input
+                  dir="ltr"
+                  value={cloudUrl}
+                  onChange={(e) => setCloudUrl(e.target.value)}
+                  placeholder="https://plus-erp-api.vercel.app"
+                  className="flex-1 px-3 py-2 rounded-lg bg-[#0A0A0E] border border-[#D4AF37]/25 text-xs text-[#F3EDDD] font-mono focus:outline-none focus:border-[#D4AF37]/60"
+                />
+                <button
+                  onClick={saveCloudUrl}
+                  className="px-3 py-2 rounded-lg text-xs font-bold gold-metallic-btn cursor-pointer"
+                >
+                  حفظ
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* حالة التخزين المحلي */}
+          {mode === 'offline' && (
+            <div className="p-3 rounded-xl bg-[#0A0F0C] border border-emerald-500/20 space-y-1.5">
+              <div className="text-[11px] font-bold text-emerald-300">قاعدة البيانات المحلية</div>
+              <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                <div>
+                  <div className="text-sm font-extrabold text-[#F3EDDD] font-mono">{kb}</div>
+                  <div className="text-[10px] text-[#7E8B84]">كيلوبايت</div>
+                </div>
+                <div>
+                  <div className="text-sm font-extrabold text-[#F3EDDD] font-mono">
+                    {details?.tables ?? '—'}
+                  </div>
+                  <div className="text-[10px] text-[#7E8B84]">جدول</div>
+                </div>
+                <div>
+                  <div className="text-sm font-extrabold text-[#F3EDDD] font-mono">
+                    {details?.routes ?? '—'}
+                  </div>
+                  <div className="text-[10px] text-[#7E8B84]">مسار API</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* أدوات */}
+          <div className="space-y-2 pt-1">
+            <button
+              onClick={backup}
+              disabled={busy !== null}
+              className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+            >
+              {busy === 'backup' ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
+              )}
+              <span>تنزيل نسخة احتياطية كاملة</span>
+            </button>
+
+            {!confirmReset ? (
+              <button
+                onClick={() => setConfirmReset(true)}
+                className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-red-950/40 border border-[#D4AF37]/25 hover:border-red-500/40 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>مسح كل البيانات وإعادة التهيئة</span>
+              </button>
+            ) : (
+              <div className="p-3 rounded-xl bg-red-950/30 border border-red-500/40 space-y-2">
+                <p className="text-[11px] text-red-200 leading-relaxed">
+                  سيُمسح كل ما أدخلته على هذا الجهاز وتعود البيانات التأسيسية فقط. لا يمكن التراجع
+                  إلا من نسخة احتياطية.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void resetOfflineData()}
+                    className="flex-1 py-2 rounded-lg text-xs font-bold bg-red-600/80 hover:bg-red-600 text-white cursor-pointer"
+                  >
+                    نعم، امسح
+                  </button>
+                  <button
+                    onClick={() => setConfirmReset(false)}
+                    className="flex-1 py-2 rounded-lg text-xs font-bold bg-[#13131A] border border-[#D4AF37]/25 text-[#E2DAC6] cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {saved && (
+          <div className="px-5 py-2 bg-emerald-950/40 border-t border-emerald-500/30 text-[11px] text-emerald-300 flex items-center gap-2">
+            <Check className="w-3.5 h-3.5" />
+            تم حفظ الإعداد. أعد تحميل الصفحة لتطبيقه بالكامل.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

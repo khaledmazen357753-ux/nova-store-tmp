@@ -22,6 +22,9 @@
 # production
 /build
 
+# أصل ثنائي منسوخ من node_modules — يُعاد توليده بـ npm run prepare:wasm
+plus-frontend/public/sql-wasm/*.wasm
+
 # runtime sqlite databases
 plus-backend/data/*.sqlite*
 
