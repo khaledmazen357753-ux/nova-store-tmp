@@ -205,6 +205,13 @@ export interface OfflineDb {
   size(): number;
   /** يحذف كل البيانات ويعيد البناء من الصفر */
   reset(): Promise<void>;
+  /** يصدّر القاعدة كملف SQLite ثنائي حقيقي — نسخة احتياطية قابلة للنقل */
+  exportFile(): Uint8Array;
+  /**
+   * يستبدل القاعدة كاملة بملف SQLite مُتحقَّق منه مسبقاً.
+   * لا يُستدعى إلا بعد `inspectSqliteFile` — الفحص مسؤولية المستدعي.
+   */
+  replaceWithFile(bytes: Uint8Array): Promise<void>;
   readonly sqlite: SqlJsDatabase;
 }
 
@@ -510,6 +517,28 @@ export async function createOfflineDb(
     },
     async reset() {
       await idbDelete(FILE_KEY);
+    },
+    /**
+     * تصدير ثنائي مباشر.
+     *
+     * `sqlite.export()` تُرجع لقطة متّسقة للقاعدة كلها — لا حاجة لـ VACUUM
+     * أو نسخ الصفحات يدوياً. الملف الناتج صالح لفتحه في DB Browser أو
+     * sqlite3 CLI كما هو.
+     */
+    exportFile() {
+      return sqlite.export();
+    },
+    /**
+     * استبدال القاعدة كاملة بملف آخر.
+     *
+     * كائن `sqlite` الحالي لا يمكن استبداله من الخارج، ومزامنة قاعدة كاملة
+     * داخله صفاً بصف ليست فقط بطيئة بل تعرّض البيانات لخطأ نصف تنفيذ.
+     * فالحل: نكتب البايتات في التخزين ثم يُعاد تحميل الصفحة — فيفتح المحرّك
+     * الملف الجديد عبر **نفس المسار** الذي يفتح به أي قاعدة محفوظة.
+     * لا كود جديد في المحرّك، ولا احتمال لعدم تطابق الحالة الداخلية.
+     */
+    async replaceWithFile(bytes: Uint8Array) {
+      await idbPut(FILE_KEY, bytes);
     },
     sqlite,
   };

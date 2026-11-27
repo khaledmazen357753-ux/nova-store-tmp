@@ -39,7 +39,7 @@ async function main() {
     execSync('npm install -D fake-indexeddb --no-audit --no-fund', { cwd: ROOT, stdio: 'ignore' });
   }
 
-  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/lib/api.ts src/generated/engineBundle.ts';
+  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/offline/sqliteFile.ts src/lib/api.ts src/generated/engineBundle.ts';
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });

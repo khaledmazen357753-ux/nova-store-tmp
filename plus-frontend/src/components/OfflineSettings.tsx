@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Cloud, Database, Download, HardDrive, RefreshCw, Trash2, X, Check, Upload, AlertTriangle } from 'lucide-react';
 import { getDataMode, setDataMode, setCustomApiBaseUrl, getApiBaseUrl } from '../lib/api';
-import { offlineState, offlineStorageBytes, resetOfflineData, persistNow } from '../offline/engine';
+import {
+  offlineState,
+  offlineStorageBytes,
+  resetOfflineData,
+  persistNow,
+  exportSqliteFile,
+  previewSqliteFile,
+  restoreSqliteFile,
+} from '../offline/engine';
+import { suggestedFileName, BackupError, type SqliteFileInfo } from '../offline/sqliteFile';
 
 /**
  * لوحة إعدادات البيانات:
  *   • نوع التخزين (أوفلاين على الجهاز / سحابي على خادم)
  *   • حجم القاعدة المحلية وحالة الحفظ
  *   • نسخة احتياطية كاملة بصيغة JSON قابلة للاستعادة
+ *   • ملف قاعدة بيانات SQLite ثنائي (.sqlite) قابل للنقل والفتح بأي أداة
  *   • مسح وإعادة تهيئة البيانات
  */
 export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> = ({
@@ -34,6 +44,15 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoreDone, setRestoreDone] = useState<string | null>(null);
 
+  // ── النسخة الثنائية (.sqlite) ──
+  // مسار منفصل تماماً عن JSON: الملف هو القاعدة نفسها، والاستعادة تستبدلها
+  // كاملة. لذلك نطلب تأكيداً صريحاً مختلفاً وأوضح.
+  const [sqliteFile, setSqliteFile] = useState<{ name: string; bytes: Uint8Array } | null>(null);
+  const [sqliteInfo, setSqliteInfo] = useState<SqliteFileInfo | null>(null);
+  const [sqliteProblem, setSqliteProblem] = useState<string | null>(null);
+  const [sqliteError, setSqliteError] = useState<string | null>(null);
+  const [sqliteDone, setSqliteDone] = useState<string | null>(null);
+
   useEffect(() => {
     if (!open) return;
     void offlineStorageBytes().then(setBytes);
@@ -43,6 +62,11 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
     setRestorePreview(null);
     setRestoreError(null);
     setRestoreDone(null);
+    setSqliteFile(null);
+    setSqliteInfo(null);
+    setSqliteProblem(null);
+    setSqliteError(null);
+    setSqliteDone(null);
   }, [open]);
 
   if (!open) return null;
@@ -178,6 +202,77 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // النسخة الثنائية (.sqlite)
+  // ═══════════════════════════════════════════════════════════════════
+
+  /** تنزيل القاعدة الحالية كملف SQLite حقيقي */
+  const downloadSqlite = async () => {
+    setBusy('sqlite-export');
+    setSqliteError(null);
+    try {
+      const bytes = await exportSqliteFile();
+      // Uint8Array → ArrayBuffer مستقل، وإلا قد يتضمّن أي slice إضافي
+      const blob = new Blob([bytes.slice().buffer], { type: 'application/vnd.sqlite3' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = suggestedFileName();
+      a.click();
+      // تحرير الذاكرة بعد أن يبدأ المتصفح التنزيل
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      setSqliteError(err instanceof Error ? err.message : 'تعذّر تصدير ملف قاعدة البيانات');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** قراءة الملف وفحصه — بلا أي كتابة */
+  const pickSqliteFile = async (file: File) => {
+    setBusy('sqlite-preview');
+    setSqliteError(null);
+    setSqliteDone(null);
+    setSqliteInfo(null);
+    setSqliteProblem(null);
+    setSqliteFile(null);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const { info, problem } = await previewSqliteFile(bytes);
+      setSqliteFile({ name: file.name, bytes });
+      setSqliteInfo(info);
+      setSqliteProblem(problem);
+    } catch (err) {
+      setSqliteError(
+        err instanceof BackupError || err instanceof Error
+          ? err.message
+          : 'تعذّر قراءة الملف'
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** التنفيذ — بعد المعاينة والموافقة */
+  const runSqliteRestore = async () => {
+    if (!sqliteFile || sqliteProblem) return;
+    setBusy('sqlite-restore');
+    setSqliteError(null);
+    try {
+      const result = await restoreSqliteFile(sqliteFile.bytes);
+      setSqliteDone(
+        `تمت استعادة ${result.tables} جدولاً و${result.rows.toLocaleString('en-US')} صفاً. أعد تحميل الصفحة لرؤية البيانات.`
+      );
+      setSqliteFile(null);
+      setSqliteInfo(null);
+      void offlineStorageBytes().then(setBytes);
+    } catch (err) {
+      setSqliteError(err instanceof Error ? err.message : 'فشلت الاستعادة');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-2xl bg-[#0B0B10] border border-[#D4AF37]/30 shadow-2xl overflow-hidden">
@@ -297,6 +392,143 @@ export const OfflineSettings: React.FC<{ open: boolean; onClose: () => void }> =
               )}
               <span>تنزيل نسخة احتياطية كاملة</span>
             </button>
+
+            {/* ── النسخة الثنائية (.sqlite) ──────────────────────────────
+                ملف SQLite حقيقي: يُفتح بأي أداة (DB Browser / sqlite3 CLI)،
+                ويعمل حتى لو تغيّر المخطط لاحقاً لأن الفحص يمنع النسخ الغريبة. */}
+            <div className="pt-2 mt-2 border-t border-[#D4AF37]/15 space-y-2">
+              <div className="text-[11px] font-bold text-[#9E9682] flex items-center gap-1.5">
+                <Database className="w-3 h-3 text-[#D4AF37]" />
+                <span>نسخة قاعدة بيانات كاملة (.sqlite)</span>
+              </div>
+              <p className="text-[10px] leading-relaxed text-[#7E8B84]">
+                ملف قاعدة البيانات نفسه — تفتحه بأي برنامج SQLite، وتستعيده هنا في أي وقت.
+                أنسب من JSON للنسخ طويلة الأمد.
+              </p>
+
+              <button
+                onClick={downloadSqlite}
+                disabled={busy !== null}
+                className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+              >
+                {busy === 'sqlite-export' ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
+                ) : (
+                  <HardDrive className="w-3.5 h-3.5 text-[#D4AF37]" />
+                )}
+                <span>تنزيل قاعدة البيانات (.sqlite)</span>
+              </button>
+
+              <input
+                id="plus-sqlite-file"
+                type="file"
+                accept=".sqlite,.db,application/vnd.sqlite3,application/x-sqlite3"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (f) void pickSqliteFile(f);
+                }}
+              />
+
+              {!sqliteInfo && !sqliteDone && (
+                <button
+                  onClick={() => document.getElementById('plus-sqlite-file')?.click()}
+                  disabled={busy !== null}
+                  className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  {busy === 'sqlite-preview' ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  )}
+                  <span>استعادة من ملف .sqlite</span>
+                </button>
+              )}
+
+              {/* تقرير الفحص — يُعرض قبل أي كتابة */}
+              {sqliteInfo && (
+                <div className="p-3 rounded-xl bg-[#0F0F16] border border-[#D4AF37]/25 space-y-2.5">
+                  <div className="text-[11px] font-bold text-[#E5C158]">
+                    فحص الملف: {sqliteFile?.name}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <div className="text-sm font-extrabold text-[#FAF5E8]">{sqliteInfo.tables}</div>
+                      <div className="text-[9px] text-[#7E8B84]">جدول</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm font-extrabold text-[#FAF5E8]">
+                        {sqliteInfo.rows.toLocaleString('en-US')}
+                      </div>
+                      <div className="text-[9px] text-[#7E8B84]">صف</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm font-extrabold text-[#FAF5E8]">
+                        {Math.round(sqliteInfo.bytes / 1024).toLocaleString('en-US')}
+                      </div>
+                      <div className="text-[9px] text-[#7E8B84]">كيلوبايت</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+                    <Check className="w-3 h-3" />
+                    <span>رأس SQLite سليم · فحص السلامة ناجح · لا كسور في الروابط</span>
+                  </div>
+
+                  {sqliteProblem && (
+                    <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-500/40 flex items-start gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <span className="text-[10px] leading-relaxed text-amber-200">{sqliteProblem}</span>
+                    </div>
+                  )}
+
+                  <div className="p-2 rounded-lg bg-rose-950/30 border border-rose-500/30 flex items-start gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                    <span className="text-[10px] leading-relaxed text-rose-200">
+                      الاستعادة تستبدل كل البيانات الحالية بهذا الملف. صدّر نسخة من وضعك
+                      الحالي أولاً إن كنت غير متأكد.
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={runSqliteRestore}
+                      disabled={busy !== null || !!sqliteProblem}
+                      className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[#D4AF37] hover:bg-[#E5C158] text-[#0B0B10] cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {busy === 'sqlite-restore' ? 'جارٍ الاستعادة…' : 'تأكيد الاستعادة'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSqliteFile(null);
+                        setSqliteInfo(null);
+                        setSqliteProblem(null);
+                      }}
+                      disabled={busy !== null}
+                      className="px-3 py-2 rounded-lg text-[11px] font-bold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] cursor-pointer transition-colors disabled:opacity-40"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {sqliteDone && (
+                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  <span className="text-[10px] leading-relaxed text-emerald-200">{sqliteDone}</span>
+                </div>
+              )}
+
+              {sqliteError && (
+                <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                  <span className="text-[10px] leading-relaxed text-rose-200">{sqliteError}</span>
+                </div>
+              )}
+            </div>
+
 
             {/* ── استعادة نسخة احتياطية ── */}
             <input

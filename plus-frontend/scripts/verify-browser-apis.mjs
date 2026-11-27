@@ -30,7 +30,7 @@ const BROWSER_SAFE = new Set(['console', 'setTimeout', 'setInterval', 'clearTime
 
 async function main() {
   rmSync(OUT, { recursive: true, force: true });
-  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/lib/api.ts src/generated/engineBundle.ts';
+  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/offline/sqliteFile.ts src/lib/api.ts src/generated/engineBundle.ts';
   execSync(
     `npx esbuild ${ENTRY} --format=cjs --platform=node --outbase=src --outdir=${JSON.stringify(OUT)} --loader:.ts=ts --log-level=error`,
     { cwd: ROOT }
@@ -306,6 +306,65 @@ async function main() {
     check(`${label}: تفشل برسالة واضحة لا بتعليق`, failedFast, detail);
   }
   globalThis.indexedDB = realIdb;
+
+  // ── النسخة الثنائية (.sqlite) — تصدير وفحص ورفض ──────────────────
+  // نستخدم sql.js مباشرة (لا createOfflineDb) حتى لا نتلوّث بالقاعدة
+  // المحفوظة في IndexedDB من فحوص سابقة — وهو ما يجعل الفحص يمرّ خطأً.
+  {
+    const dbMod = await load('offline/db.js');
+    const sfMod = await load('offline/sqliteFile.js');
+    const sql = await dbMod.loadSqlJs();
+
+    const rawDb = new sql.Database();
+    rawDb.exec(`
+CREATE TABLE accounts (id INTEGER PRIMARY KEY, code TEXT NOT NULL, balance REAL DEFAULT 0);
+CREATE TABLE journal_entries (id INTEGER PRIMARY KEY, ref TEXT, amount REAL);`);
+    rawDb.exec("INSERT INTO accounts (code,balance) VALUES ('1101',876034),('1201',227025),('2101',166000);");
+    rawDb.exec("INSERT INTO journal_entries (ref,amount) VALUES ('JE-1001',894650);");
+
+    const bytes = rawDb.export();
+    check('التصدير يُنتج ملف SQLite ببصمة صحيحة', sfMod.looksLikeSqlite(bytes), `${bytes.byteLength} بايت`);
+
+    const names = rawDb
+      .exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")[0]
+      .values.map((r) => String(r[0]));
+
+    const info = sfMod.inspectSqliteFile(sql.Database, bytes, names);
+    check('الفحص يقرأ الجداول والصفوف', info.tables === 2 && info.rows === 4, `${info.tables} جدول · ${info.rows} صف`);
+    check('الفحص يؤكد التوافق مع النظام الحالي', info.compatible && sfMod.incompatibilityMessage(info) === null);
+
+    let corruptCode = null;
+    let corruptArabic = false;
+    try {
+      sfMod.inspectSqliteFile(sql.Database, bytes.slice(0, Math.floor(bytes.byteLength * 0.6)), names);
+    } catch (e) {
+      corruptCode = e.code;
+      corruptArabic = /تالف|يكتمل|أعد تنزيل/.test(e.message);
+    }
+    check('ملف مقطوع مرفوض برسالة عربية', corruptCode === 'CORRUPT' && corruptArabic, String(corruptCode));
+
+    let notSqlite = null;
+    try {
+      sfMod.inspectSqliteFile(sql.Database, new Uint8Array(2048).fill(65), names);
+    } catch (e) {
+      notSqlite = e.code;
+    }
+    check('ملف ليس SQLite مرفوض قبل الفتح', notSqlite === 'NOT_SQLITE', String(notSqlite));
+
+    // مخطط مختلف = رفض صريح برسالة تشرح السبب
+    const otherDb = new sql.Database();
+    otherDb.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY); CREATE TABLE ghost_table (id INTEGER PRIMARY KEY);');
+    const otherInfo = sfMod.inspectSqliteFile(sql.Database, otherDb.export(), names);
+    const why = sfMod.incompatibilityMessage(otherInfo);
+    check(
+      'نسخة من مخطط مختلف تُرفض برسالة تشرح السبب',
+      otherInfo.compatible === false && !!why && /جداول/.test(why),
+      String(why).slice(0, 70)
+    );
+
+    rawDb.close();
+    otherDb.close();
+  }
 
   // استعادة ما حذفناه حتى لا يتأثر باقي التشغيل
   for (const [k, v] of Object.entries(removed)) {
