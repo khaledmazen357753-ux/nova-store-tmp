@@ -228,6 +228,56 @@ async function main() {
     readFileSync(path.join(ROOT, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'))
   );
 
+  // ── شبكة بطيئة ليست شبكة متوقفة ──
+  // المهلة الثابتة كانت تقتل تحميلاً بطيئاً لكنه سليم. الفرق الحقيقي بين
+  // الحالتين هو وصول تقدّم: نحاكي هنا تدفّقاً بطيئاً جداً يجب أن ينجح،
+  // وتدفّقاً متوقفاً تماماً يجب أن يفشل برسالة مفهومة — لا أن يعلّق.
+  const { ReadableStream } = await import('node:stream/web');
+  const realFetch = globalThis.fetch;
+  const mkStream = (chunks, delayMs, stallAfter) => {
+    let i = 0;
+    return new ReadableStream({
+      async pull(ctrl) {
+        if (stallAfter !== undefined && i === stallAfter) return; // يتوقف بلا إغلاق
+        if (i >= chunks.length) return ctrl.close();
+        await new Promise((r) => setTimeout(r, delayMs));
+        ctrl.enqueue(chunks[i++]);
+      },
+    });
+  };
+
+  const wasmBytes = readFileSync(path.join(ROOT, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'));
+  const src = new Uint8Array(wasmBytes);
+
+  // بطيء لكنه يتقدّم: 8 دفعات × 120ms = ~1s، أقل بكثير من عتبة التوقف
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+   fetchCalls += 1;
+   return {
+    ok: true, status: 200,
+    headers: { get: () => 'application/wasm' },
+    body: mkStream(Array.from({ length: 8 }, (_, k) => src.slice(k * 1000, (k + 1) * 1000)), 120),
+    arrayBuffer: async () => src.buffer,
+    clone() { return this; },
+   };
+  };
+  let slowOk = false, slowDetail = '';
+  try {
+    // مهم: `import()` لمسار مختلف يعطي وحدة أخرى بحالة `SQL` مستقلة.
+    // نستخدم نفس نسخة db المحمّلة في الفحص السابق كي نتحكم في حالتها فعلاً.
+    const dbMod = await load('offline/db.js');
+    dbMod.resetSqlJsCache();
+    globalThis.__PLUS_WASM_BYTES__ = undefined;
+
+    const { db } = await dbMod.createOfflineDb('CREATE TABLE t (a INTEGER);');
+    db.exec('CREATE TABLE IF NOT EXISTS probe_t (a INTEGER);');
+    slowOk = db.prepare('SELECT COUNT(*) c FROM probe_t').get().c === 0;
+  } catch (e) { slowDetail = String(e?.message ?? e).slice(0, 70); }
+  check('شبكة بطيئة لكنها تتقدّم تُكمل بنجاح', slowOk, slowDetail || `طلبات: ${fetchCalls}`);
+
+  globalThis.fetch = realFetch;
+  globalThis.__PLUS_WASM_BYTES__ = new Uint8Array(wasmBytes);
+
   // استعادة ما حذفناه حتى لا يتأثر باقي التشغيل
   for (const [k, v] of Object.entries(removed)) {
     if (typeof globalThis[k] === 'undefined') { try { globalThis[k] = v; } catch { /* تجاهل */ } }
