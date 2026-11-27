@@ -77,6 +77,41 @@ export async function storedBytes(): Promise<number> {
   }
 }
 
+/**
+ * يوحّد القيم المرسَطة إلى ما يقبله sql.js، ويطابق سلوك المحرّكات الأخرى.
+ *
+ * لماذا هذا ضروري:
+ *   better-sqlite3 و libSQL و node:sqlite كلها تقبل `undefined` وتعامله كـ NULL.
+ *   لذلك كُتبت الاستعلامات في routes/ و accountingEngine.js بحرية، مثل:
+ *     .run(full_name, email, role_code, ...)   // بعضها قد يكون undefined
+ *   و COALESCE(?, column) يعتمد على وصول NULL كي يُبقي القيمة الحالية.
+ *   أما sql.js فيرمي "Wrong API use : tried to bind a value of an unknown
+ *   type (undefined)"، فتتحوّل كل تعديل جزئي (سعر صنف، هاتف عميل، إعدادات
+ *   المنشأة) إلى خطأ 500 في وضع الأوفلاين رغم نجاحها على الخادم.
+ *
+ * الحل هنا لا يعدّل أي استعلام بل يجعل الربط يطابق المحرّكات الثلاثة:
+ *   undefined → NULL   (و boolean → 0/1 و bigint → number و Date → ISO)
+ */
+function normalizeBindValue(value: unknown): unknown {
+  if (value === undefined) return null;
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  if (typeof value === 'bigint') return Number(value);
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value) || (value !== null && typeof value === 'object')) {
+    // بعض الاستعلامات تمرّر كائنات بسيطة؛ لا نخمّن تحويلها بل نرمي خطأً واضحاً
+    // بدل خطأ sql.js الغامض، لأن تمرير كائن إلى SQLite خطأ برمجي دائماً.
+    if (value instanceof Uint8Array) return value;
+    throw new TypeError(
+      `قيمة غير صالحة للربط في استعلام SQL: ${Object.prototype.toString.call(value)}`
+    );
+  }
+  return value;
+}
+
+function normalizeBindParams(params: unknown[]): unknown[] {
+  return params.map(normalizeBindValue);
+}
+
 export interface RunResult {
   changes: number;
   lastInsertRowid: number;
@@ -221,7 +256,7 @@ export async function createOfflineDb(
           // نستخدم prepare + step للحصول على last_insert_rowid بشكل صحيح
           const stmt = sqlite.prepare(sqlText);
           try {
-            stmt.bind(params as never[]);
+            stmt.bind(normalizeBindParams(params) as never[]);
             stmt.step();
             const rowidRow = sqlite.exec('SELECT last_insert_rowid() AS r');
             const changesRow = sqlite.exec('SELECT changes() AS c');
@@ -236,7 +271,7 @@ export async function createOfflineDb(
         get(...params: unknown[]) {
           const stmt = sqlite.prepare(sqlText);
           try {
-            stmt.bind(params as never[]);
+            stmt.bind(normalizeBindParams(params) as never[]);
             if (!stmt.step()) return undefined;
             return stmt.getAsObject() as Record<string, unknown>;
           } finally {
@@ -247,7 +282,7 @@ export async function createOfflineDb(
           const stmt = sqlite.prepare(sqlText);
           const rows: Record<string, unknown>[] = [];
           try {
-            stmt.bind(params as never[]);
+            stmt.bind(normalizeBindParams(params) as never[]);
             while (stmt.step()) rows.push(stmt.getAsObject() as Record<string, unknown>);
             return rows;
           } finally {

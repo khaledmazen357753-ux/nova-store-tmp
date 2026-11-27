@@ -132,6 +132,79 @@ async function main() {
     'بديل مكتوب بـ JavaScript'
   );
 
+  // ── ربط undefined: عطل أصاب كل نماذج "تعديل" في الوضع الأوفلاين ──
+  // كل استعلامات المشروع كُتبت لمحرّكات تقبل undefined كـ NULL (libSQL،
+  // node:sqlite)، أما sql.js فيرمي عند ربطها. النتيجة كانت 500 في تعديل سعر
+  // صنف أو هاتف عميل أو إعدادات المنشأة، رغم نجاحها على الخادم. الفحص هنا
+  // يمرّر undefined صريحاً ويعدّل حقلاً واحداً فقط، فيكشف أي ارتداد فوراً.
+  let bindOk = false, bindErr = '';
+  try {
+    state.db.prepare('SELECT COUNT(*) AS c FROM items WHERE item_code = COALESCE(?, item_code)').get(undefined);
+    bindOk = true;
+  } catch (e) { bindErr = String(e?.message ?? e); }
+  check('ربط undefined يُعامل كـ NULL', bindOk, bindOk ? '' : bindErr.slice(0, 60));
+
+  let boolOk = false, boolErr = '';
+  try {
+    state.db.prepare('SELECT ? AS v').get(true);
+    boolOk = true;
+  } catch (e) { boolErr = String(e?.message ?? e); }
+  check('ربط boolean يعمل (يُحوَّل 0/1)', boolOk, boolOk ? '' : boolErr.slice(0, 60));
+
+  // تعديل جزئي حقيقي: نغيّر حقلاً واحداً ونتأكد أن الباقي لم يُمسح
+  let partialOk = false, partialErr = '';
+  try {
+    const cust = state.db.prepare('SELECT customer_id, customer_name, city FROM customers LIMIT 1').get();
+    await api.apiFetch(`/api/master/customers/${encodeURIComponent(cust.customer_id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ city: 'مدينة الفحص' }),
+    });
+    const after = state.db
+      .prepare('SELECT customer_name, city FROM customers WHERE customer_id = ?')
+      .get(cust.customer_id);
+    partialOk = after.city === 'مدينة الفحص' && after.customer_name === cust.customer_name;
+  } catch (e) { partialErr = String(e?.message ?? e); }
+  check('تعديل جزئي يحفظ الحقول غير المرسلة', partialOk, partialOk ? '' : partialErr.slice(0, 60));
+
+  // ── إعادة التهيئة يجب ألا تفصل الجلسات ──
+  // 15 جدولاً يستخدم AUTOINCREMENT؛ بدون تصفير sqlite_sequence تعاد زراعة
+  // المستخدمين بمعرّفات جديدة فتفشل كل التوكنات الحالية برسالة مضلّلة.
+  let idStable = false, idDetail = '';
+  try {
+    const before = state.db.prepare('SELECT id FROM users WHERE username = ?').get('admin').id;
+    await api.apiFetch('/api/admin/reset-demo', { method: 'POST', body: '{}' });
+    const after = state.db.prepare('SELECT id FROM users WHERE username = ?').get('admin').id;
+    const sessionAlive = await api
+      .apiFetch('/api/master/items')
+      .then(() => true)
+      .catch(() => false);
+    idStable = before === after && sessionAlive;
+    idDetail = `id ${before} → ${after}`;
+  } catch (e) { idDetail = String(e?.message ?? e).slice(0, 60); }
+  check('إعادة التهيئة لا تغيّر معرّفات المستخدمين', idStable, idDetail);
+
+  // ── تصعيد الصلاحيات: صاحب بوابة الأدمن غير المدير لا يمنح نفسه مديراً ──
+  let escBlocked = true, escDetail = '';
+  try {
+    const acc = await api.apiFetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'accountant', password: 'plus123', portal: 'ADMIN' }),
+    });
+    api.setStoredToken(acc.token);
+    for (const [label, pth, method, body] of [
+      ['إنشاء مستخدم مدير', '/api/admin/users', 'POST', { username: 'pwn', full_name: 'x', password: 'p1', role_code: 'SUPER_ADMIN' }],
+      ['محو كل البيانات', '/api/admin/reset-demo', 'POST', {}],
+      ['تعديل مصفوفة الصلاحيات', '/api/admin/roles/AUDITOR_VIEWER', 'PUT', { permissions: { all: true } }],
+    ]) {
+      const ok = await api.apiFetch(pth, { method, body: JSON.stringify(body) }).then(() => false).catch(() => true);
+      if (!ok) { escBlocked = false; escDetail = label; }
+    }
+    // الإطلاع يجب أن يظل مسموحاً — الحماية ليست منعاً للمحاسب من العمل
+    const canReview = await api.apiFetch('/api/admin/audit-logs').then(() => true).catch(() => false);
+    if (!canReview && escBlocked) { escBlocked = false; escDetail = 'المحاسب مُنع من المراجعة'; }
+  } catch (e) { escBlocked = false; escDetail = String(e?.message ?? e).slice(0, 60); }
+  check('المحاسب لا يستطيع تصعيد الصلاحيات', escBlocked, escBlocked ? '' : escDetail);
+
   // استعادة ما حذفناه حتى لا يتأثر باقي التشغيل
   for (const [k, v] of Object.entries(removed)) {
     if (typeof globalThis[k] === 'undefined') { try { globalThis[k] = v; } catch { /* تجاهل */ } }
@@ -139,7 +212,22 @@ async function main() {
 
   rmSync(OUT, { recursive: true, force: true });
   console.log(`\nالنتيجة: ${pass} نجح | ${fail} فشل`);
-  process.exit(fail ? 1 : 0);
+  finish(fail ? 1 : 0);
 }
 
-main().catch((e) => { console.error('فشل الفحص:', e); process.exit(1); });
+/**
+ * الخروج: هذا الفحص يحذف `process` عمداً لمحاكاة المتصفح، لكننا نحتاجه نحن
+ * لضبط رمز الخروج. نستعيده من الكائن المحفوظ قبل الحذف. وبلا رمز خروج فاشل
+ * سيمرّ الاختبار الفاشل كأنه ناجح في أي سلسلة CI.
+ */
+function finish(code) {
+  const proc = removed.process ?? globalThis.process;
+  if (proc?.exit) proc.exit(code);
+  else throw new Error(`فحص فاشل (${code}) — process غير متاحة للخروج`);
+}
+
+main().catch((e) => {
+  console.error('فشل الفحص:', e?.stack ?? e);
+  const proc = removed.process ?? globalThis.process;
+  if (proc?.exit) proc.exit(1);
+});

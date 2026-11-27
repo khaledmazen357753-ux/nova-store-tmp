@@ -10,6 +10,41 @@ module.exports = function createAdminRouter(db, authenticate) {
   router.use(authenticate);
   router.use(requireAdminPortal);
 
+  // ── فصل الصلاحيات داخل بوابة الأدمن ────────────────────────────────────────
+  //
+  // requireAdminPortal تسمح لكل من عليه is_admin_portal_allowed بالدخول، وهذا
+  // صحيح للاطلاع على البيانات والتقارير. لكن إدارة الهوية ليست "إدارة بيانات"
+  // بل "منح صلاحيات". المثال الذي كشف الفجوة: حساب CHIEF_ACCOUNTANT مسموح له
+  // بالبوابة، وكان يستطيع إنشاء حساب SUPER_ADMIN ثم الدخول به — أي تجاوز كل
+  // القيود عبر حساب يملكه هو. كذلك كان يستطيع reset-demo فمحو كل الشركة.
+  //
+  // المبدأ المطبق: ما يمسّ الهوية (users/roles) أو يمحو البيانات (restore/
+  // reset-demo) أو يفعّل الترحيل المالي (close-rollover) محصور في SUPER_ADMIN.
+  // القراءة (overview/users/roles/schema/backup/audit-logs/preview) تبقى متاحة
+  // للبوابة كي يظل المحاسب الرئيسي قادراً على المراجعة والاطلاع.
+  function requireSuperAdmin(req, res, next) {
+    if (!req.user || req.user.role_code !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        error: 'هذه العملية تقتصر على مدير النظام الأعلى (SUPER_ADMIN). تواصل معه لتنفيذها.',
+      });
+    }
+    next();
+  }
+
+  // لا يجوز لأي عملية إدارية أن تمنح دور SUPER_ADMIN إلا من مدير أعلى.
+  // نتحقق من الحقل الصريح فقط، والتحقق من القيمة الفعلية يتم داخل المعالج
+  // بعد قراءة المستخدم الهدف (كي لا يُرقّى أحد عبر PUT بلا role_code صريح).
+  function guardSuperAdminGrant(req, res, next) {
+    if (req.user?.role_code === 'SUPER_ADMIN') return next();
+    const requested = String(req.body?.role_code || '').toUpperCase();
+    if (requested === 'SUPER_ADMIN') {
+      return res.status(403).json({
+        error: 'لا يمكن منح دور مدير النظام الأعلى (SUPER_ADMIN) إلا بواسطة مدير أعلى.',
+      });
+    }
+    next();
+  }
+
   router.get('/overview', (_req, res) => {
     const tableMeta = [
       { table: 'account_main_groups', label: 'المجموعات الرئيسية للحسابات', category: 'Master' },
@@ -82,7 +117,7 @@ module.exports = function createAdminRouter(db, authenticate) {
     res.json({ users });
   });
 
-  router.post('/users', (req, res) => {
+  router.post('/users', requireSuperAdmin, guardSuperAdminGrant, (req, res) => {
     const { username, full_name, email, password, role_code, is_admin_portal_allowed = false } = req.body || {};
     if (!username || !full_name || !password || !role_code) {
       return res.status(400).json({ error: 'اسم المستخدم والاسم الكامل وكلمة المرور والدور الوظيفي مطلوبة' });
@@ -108,7 +143,7 @@ module.exports = function createAdminRouter(db, authenticate) {
     }
   });
 
-  router.put('/users/:id', (req, res) => {
+  router.put('/users/:id', requireSuperAdmin, guardSuperAdminGrant, (req, res) => {
     const { full_name, email, role_code, is_admin_portal_allowed, is_active, new_password } = req.body || {};
     const target = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.params.id);
     if (!target) return res.status(404).json({ error: 'المستخدم غير موجود' });
@@ -159,7 +194,7 @@ module.exports = function createAdminRouter(db, authenticate) {
     res.json({ roles });
   });
 
-  router.post('/roles', (req, res) => {
+  router.post('/roles', requireSuperAdmin, (req, res) => {
     const { role_code, role_name, description = '', permissions = {} } = req.body || {};
     if (!role_code || !role_name) return res.status(400).json({ error: 'كود واسم الدور مطلوبان' });
     try {
@@ -175,7 +210,7 @@ module.exports = function createAdminRouter(db, authenticate) {
     }
   });
 
-  router.put('/roles/:code', (req, res) => {
+  router.put('/roles/:code', requireSuperAdmin, (req, res) => {
     const { role_name, description, permissions } = req.body || {};
     const existing = db.prepare(`SELECT * FROM roles WHERE role_code = ?`).get(req.params.code);
     if (!existing) return res.status(404).json({ error: 'الدور غير موجود' });
@@ -255,7 +290,7 @@ module.exports = function createAdminRouter(db, authenticate) {
     res.json({ periods });
   });
 
-  router.post('/fiscal-periods/close-rollover', (req, res) => {
+  router.post('/fiscal-periods/close-rollover', requireSuperAdmin, (req, res) => {
     const { period_id = 'FY-2026', next_period_id = 'FY-2027', next_period_name = 'السنة المالية 2027' } = req.body || {};
 
     try {
@@ -450,7 +485,7 @@ module.exports = function createAdminRouter(db, authenticate) {
    *
    * تتطلب تأكيداً صريحاً: قرار الاستعادة يمحو كل البيانات الحالية.
    */
-  router.post('/restore', (req, res) => {
+  router.post('/restore', requireSuperAdmin, (req, res) => {
     const { confirm, backup } = req.body || {};
     if (confirm !== 'RESTORE') {
       return res.status(400).json({
@@ -503,7 +538,7 @@ module.exports = function createAdminRouter(db, authenticate) {
     });
   });
 
-  router.post('/reset-demo', (req, res) => {
+  router.post('/reset-demo', requireSuperAdmin, (req, res) => {
     seedDatabase(db);
     logAudit(db, {
       username: req.user.username,
