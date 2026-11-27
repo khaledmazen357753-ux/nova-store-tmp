@@ -168,6 +168,106 @@ function patchDbSource() {
   return patched;
 }
 
+
+/* ── بديل Buffer — كود الخادم يستخدمه في توقيع التوكن ──────────────
+ *
+ * auth.js يستدعي Buffer.from(...).toString('base64url') و Buffer.from(s,'base64url')
+ * و Buffer غير موجودة في المتصفح إطلاقاً. النتيجة كانت فشل كل محاولة تسجيل
+ * دخول في الوضع الأوفلاين برسالة "Buffer is not defined".
+ *
+ * البديل يغطي الأوجه المستخدمة فعلاً في المشروع، وبنفس الترميز بالبايت
+ * (base64url بلا حشو)، فالتوكن المولّد في المتصفح مقبول على الخادم والعكس.
+ */
+/* جسم شيم Buffer — يُحقن في مقدمة الحزمة ويُستخدم أيضاً كوحدة node:buffer */
+const BUFFER_BODY = `
+const api = globalThis.__PLUS_CRYPTO__;
+if (!api) throw new Error('دوال التشفير لم تُحقن قبل تحميل الحزمة');
+
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function encodeBase64(bytes, urlSafe) {
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const b1 = bytes[i + 1];
+    const b2 = bytes[i + 2];
+    out += B64[b0 >> 2];
+    out += B64[((b0 & 0x03) << 4) | ((b1 || 0) >> 4)];
+    out += i + 1 < bytes.length ? B64[((b1 & 0x0f) << 2) | ((b2 || 0) >> 6)] : '';
+    out += i + 2 < bytes.length ? B64[b2 & 0x3f] : '';
+  }
+  if (urlSafe) return out.replaceAll('+', '-').replaceAll('/', '_');
+  const pad = bytes.length % 3;
+  return pad ? out + '='.repeat(3 - pad) : out;
+}
+
+function decodeBase64(str) {
+  const clean = String(str).replace(/-/g, '+').replace(/_/g, '/').replace(/[^A-Za-z0-9+/]/g, '');
+  const len = clean.length;
+  const bytes = [];
+  for (let i = 0; i < len; i += 4) {
+    const c0 = B64.indexOf(clean[i]);
+    const c1 = B64.indexOf(clean[i + 1]);
+    const c2 = i + 2 < len ? B64.indexOf(clean[i + 2]) : -1;
+    const c3 = i + 3 < len ? B64.indexOf(clean[i + 3]) : -1;
+    if (c0 < 0 || c1 < 0) break;
+    bytes.push((c0 << 2) | (c1 >> 4));
+    if (c2 >= 0) bytes.push(((c1 & 0x0f) << 4) | (c2 >> 2));
+    if (c3 >= 0) bytes.push(((c2 & 0x03) << 6) | c3);
+  }
+  return new Uint8Array(bytes);
+}
+
+function toBytes(input, encoding) {
+  if (input instanceof Uint8Array) return new Uint8Array(input);
+  if (typeof input === 'string') {
+    if (encoding === 'base64url' || encoding === 'base64') return decodeBase64(input);
+    if (encoding === 'hex') {
+      const out = new Uint8Array(Math.floor(input.length / 2));
+      for (let i = 0; i < out.length; i += 1) out[i] = parseInt(input.substr(i * 2, 2), 16);
+      return out;
+    }
+    return api.utf8(input);
+  }
+  if (Array.isArray(input)) return new Uint8Array(input);
+  throw new Error('نوع غير مدعوم في Buffer.from');
+}
+
+class PlusBuffer extends Uint8Array {
+  toString(encoding) {
+    const enc = String(encoding || 'utf8').toLowerCase();
+    if (enc === 'base64url') return encodeBase64(this, true);
+    if (enc === 'base64') return encodeBase64(this, false);
+    if (enc === 'hex') {
+      let out = '';
+      for (let i = 0; i < this.length; i += 1) out += this[i].toString(16).padStart(2, '0');
+      return out;
+    }
+    return api.fromUtf8(this);
+  }
+}
+
+const BufferShim = {
+  from(input, encoding) {
+    const bytes = toBytes(input, encoding);
+    return new PlusBuffer(bytes.buffer.slice(0));
+  },
+  isBuffer(v) {
+    return v instanceof PlusBuffer;
+  },
+  alloc(n) {
+    return new PlusBuffer(new ArrayBuffer(n));
+  },
+};
+
+globalThis.Buffer = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : BufferShim;
+`;
+
+const BUFFER_SHIM = BUFFER_BODY + `
+export { BufferShim as Buffer };
+export default { Buffer: BufferShim };
+`;
+
 function shimPlugin() {
   return {
     name: 'browser-shims',
@@ -175,6 +275,7 @@ function shimPlugin() {
       const map = [
         [/^express$/, 'express', () => 'module.exports = globalThis.__PLUS_EXPRESS__;'],
         [/^node:crypto$|^crypto$/, 'crypto', () => CRYPTO_SHIM],
+        [/^node:buffer$|^buffer$/, 'buffer', () => BUFFER_SHIM],
         [/^node:fs$|^fs$/, 'fs', () => FS_SHIM],
         [/^node:path$|^path$/, 'path', () => PATH_SHIM],
         [/^\.\/libsql-adapter$|^libsql$/, 'libsql', () => LIBSQL_SHIM],
@@ -195,6 +296,9 @@ function shimPlugin() {
     },
   };
 }
+
+/** يُضاف في بداية الحزمة: Buffer عامة كما يفترضها كود Node */
+const BUFFER_PREAMBLE = `(function(){ if (typeof globalThis.Buffer !== 'undefined') return; /* يُحقن لاحقاً */ })();`;
 
 async function main() {
   for (const rel of REQUIRED) {
@@ -234,6 +338,10 @@ async function main() {
       __dirname: '"/offline/plus-backend/src"',
       __filename: '"/offline/plus-backend/src/db.js"',
     },
+    // auth.js يستخدم Buffer كمتغير عام بلا استيراد (كما تفترض Node)،
+    // و esbuild لا يعرف عنها شيئاً. الحقن في مقدمة الحزمة هو المكان الوحيد
+    // الذي يجعلها مرئية لكل الملفات المحزَّمة — وبلا تعديل سطر واحد من كود الخادم.
+    banner: { js: `(function(){ ${BUFFER_BODY} })();` },
     plugins: [shimPlugin()],
   });
 

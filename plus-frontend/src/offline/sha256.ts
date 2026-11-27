@@ -140,6 +140,36 @@ export function hmacSha256(keyBytes: Uint8Array, msgBytes: Uint8Array): Uint8Arr
   return sha256(outer);
 }
 
+/**
+ * يفكّ ترميز UTF-8 إلى نص.
+ *
+ * الغرض: Buffer.toString() بلا ترميز تعني utf8. وبلا هذه الدالة كانت
+ * أي محاولة لقراءة محتوى Buffer كنص تفشل بـ "fromUtf8 is not a function".
+ */
+export function fromUtf8(bytes: Uint8Array): string {
+  let out = '';
+  let i = 0;
+  while (i < bytes.length) {
+    const b0 = bytes[i++];
+    let cp = b0;
+    if (b0 > 0x7f) {
+      if (b0 >> 5 === 0x6) {
+        cp = ((b0 & 0x1f) << 6) | (bytes[i++] & 0x3f);
+      } else if (b0 >> 4 === 0xe) {
+        cp = ((b0 & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+      } else if (b0 >> 3 === 0x1e) {
+        cp =
+          ((b0 & 0x07) << 18) |
+          ((bytes[i++] & 0x3f) << 12) |
+          ((bytes[i++] & 0x3f) << 6) |
+          (bytes[i++] & 0x3f);
+      }
+    }
+    out += String.fromCodePoint(cp);
+  }
+  return out;
+}
+
 export function toHex(bytes: Uint8Array): string {
   let out = '';
   for (let i = 0; i < bytes.length; i += 1) out += bytes[i].toString(16).padStart(2, '0');
