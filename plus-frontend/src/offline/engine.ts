@@ -73,6 +73,25 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
   if (state) return state;
   if (initPromise) return initPromise;
 
+  // سقف زمني للتهيئة كلها.
+  //
+  // بدونه، أي انتظار لا ينتهي (شبكة نصف مفتوحة، IndexedDB معلّق، متصفح يوقف
+  // المؤقتات) يجعل شاشة "جارٍ تشغيل محرك الحسابات…" تدور للأبد. المستخدم
+  // رأى هذا فعلاً في الإنتاج. الخطأ الواضح أفضل ألف مرة من الدوران الصامت،
+  // خصوصاً أن حلقة `plusBootSpin` في الصفحة لا تنتهي بذاتها.
+  const INIT_DEADLINE_MS = 45000;
+  const deadline = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(
+        new Error(
+          `تعذّر إكمال تشغيل محرك الحسابات خلال ${INIT_DEADLINE_MS / 1000} ثانية. ` +
+            'قد تكون الشبكة بطيئة عند تحميل ملف قاعدة البيانات لأول مرة. ' +
+            'أعد تحميل الصفحة، وإن تكرر الأمر فامسح الكاش.'
+        )
+      );
+    }, INIT_DEADLINE_MS);
+  });
+
   initPromise = (async () => {
     const started = performance.now();
 
@@ -159,7 +178,10 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
   })();
 
   try {
-    return await initPromise;
+    // `Promise.race` مع الخطأ: أي منهما ينتهي أولاً يحسم النتيجة.
+    // المهم أن الفشل يُعيد تصفير `initPromise` حتى تنجح محاولة لاحقة —
+    // وعد مرفوض عالق كان سيجعل كل زر "إعادة المحاولة" يفشل فوراً بنفس الخطأ.
+    return await Promise.race([initPromise, deadline]);
   } catch (err) {
     initPromise = null;
     throw err;

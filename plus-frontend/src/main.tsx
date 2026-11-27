@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { initOfflineEngine } from './offline/engine';
+import { resetSqlJsCache } from './offline/db';
 import { getDataMode } from './lib/api';
 import './index.css';
 
@@ -64,7 +65,10 @@ function renderBootFailure(err: unknown) {
     } catch (e) {
       console.warn('تعذر مسح الكاش:', e);
     }
-    // لا نمسح IndexedDB — فيه بيانات المستخدم الفعلية
+    // لا نمسح IndexedDB — فيه بيانات المستخدم الفعلية.
+    // نُفرغ نواة wasm المخزَّنة كي يُعاد تحميلها فعلاً بدل إعادة استخدام
+    // النسخة الفاشلة من الذاكرة، وإلا بدا الزر كأنه لا يفعل شيئاً.
+    resetSqlJsCache();
     window.location.reload();
   });
 }

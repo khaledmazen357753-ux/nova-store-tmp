@@ -18,6 +18,8 @@ const ROOT = path.join(HERE, '..');
 const OUT = path.join(ROOT, 'node_modules', '.verify-bapis');
 
 let pass = 0, fail = 0;
+/** واجهات Node التي حذفناها عمداً — نحتاجها لاستعادتها ولالخروج برمز صحيح */
+const removed = {};
 const check = (name, cond, detail = '') => {
   if (cond) { pass++; console.log(`  ✅ ${name}${detail ? ` — ${detail}` : ''}`); }
   else { fail++; console.log(`  ❌ ${name}${detail ? ` — ${detail}` : ''}`); }
@@ -35,7 +37,6 @@ async function main() {
   );
 
   // ── نحذف واجهات Node من البيئة العامة قبل تحميل أي شيء ──
-  const removed = {};
   for (const name of ['Buffer', 'process', '__dirname', '__filename', 'require', 'module', 'exports', 'global']) {
     if (name in globalThis) {
       removed[name] = globalThis[name];
@@ -204,6 +205,28 @@ async function main() {
     if (!canReview && escBlocked) { escBlocked = false; escDetail = 'المحاسب مُنع من المراجعة'; }
   } catch (e) { escBlocked = false; escDetail = String(e?.message ?? e).slice(0, 60); }
   check('المحاسب لا يستطيع تصعيد الصلاحيات', escBlocked, escBlocked ? '' : escDetail);
+
+  // ── لا تعليق أبدي: wasm لا يُحمَّل = خطأ واضح لا سبينر لا ينتهي ──
+  // المستخدم رأى في الإنتاج شاشة "جارٍ تشغيل محرك الحسابات…" تدور بلا نهاية.
+  // السبب: `fetch` للـ wasm بلا مهلة ينتظر للأبد عند شبكة نصف مفتوحة.
+  // الفحص هنا لا ينتظر: يثبت أن غياب البايتات يُنتج خطأً صريحاً وسريعاً.
+  let failFast = false, failDetail = '';
+  try {
+    globalThis.__PLUS_WASM_BYTES__ = new Uint8Array([1, 2, 3]);
+    const dbMod = await load('offline/db.js');
+    // نُفرغ النواة المخزَّنة أولاً، وإلا عادت بلا فحص للبايتات (وهو عطل حقيقي
+    // في مسار التعافي كان يمنع زر «امسح الكاش وأعد المحاولة» من العمل)
+    dbMod.resetSqlJsCache();
+    await dbMod.createOfflineDb('CREATE TABLE t (a);');
+    failDetail = 'قبلت بايتات غير صالحة';
+  } catch (e) {
+    failFast = /بصمة wasm|WebAssembly/.test(String(e?.message ?? e));
+    failDetail = String(e?.message ?? e).slice(0, 70);
+  }
+  check('wasm تالف يفشل بخطأ صريح لا بتعليق', failFast, failDetail);
+  globalThis.__PLUS_WASM_BYTES__ = new Uint8Array(
+    readFileSync(path.join(ROOT, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'))
+  );
 
   // استعادة ما حذفناه حتى لا يتأثر باقي التشغيل
   for (const [k, v] of Object.entries(removed)) {
