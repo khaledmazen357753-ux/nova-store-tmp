@@ -146,6 +146,37 @@ function looksLikeWasmBytes(bytes: Uint8Array): boolean {
 }
 
 /**
+ * `fetch` بمهلة صريحة.
+ *
+ * لماذا: بلا مهلة، لو تجمّد الخادم أو ظلّ اتصال شبكة نصف مفتوح (شائع على
+ * شبكات الجوال)، ينتظر `fetch` بلا نهاية. والنتيجة التي رآها المستخدم فعلاً:
+ * شاشة "جارٍ تشغيل محرك الحسابات…" تدور للأبد، بلا رسالة ولا زر. الصمت
+ * الأسوأ من الخطأ — الخطأ على الأقل يقول للمستخدم ما يفعل.
+ */
+function fetchWithDeadline(url: string, init: RequestInit, ms = 20000): Promise<Response> {
+  if (typeof AbortController === 'undefined') return fetch(url, init);
+
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(
+        new Error(
+          `انتهت مهلة تحميل ملف قاعدة البيانات (${Math.round(ms / 1000)} ثانية) من ${url}. ` +
+            'قد تكون الشبكة بطيئة أو محجوبة. أعد المحاولة، وإن تكرر الأمر تحقّق من الاتصال بالإنترنت.'
+        )
+      );
+    }, ms);
+  });
+
+  return Promise.race([fetch(url, { ...init, signal: controller.signal }), deadline]).finally(() => {
+    if (timer) clearTimeout(timer);
+  }) as Promise<Response>;
+}
+
+/**
  * يحمّل ملف الـ wasm بنفسه بدل ترك sql.js يجريه.
  *
  * السبب: كان العطل القاتل أن Service Worker (من إصدار قديم) يقدّم صفحة
@@ -173,7 +204,7 @@ async function fetchWasmBytes(url: string): Promise<Uint8Array> {
   // المتصفح قد يعيد استجابة مخزَّنة من SW لا يمكن تجاوزه بالخيارات،
   // لذلك نعيد المحاولة بعد إلغاء تسجيل الـ SW إن بدت الاستجابة ملوّثة.
   const attempt = async (): Promise<Response> =>
-    fetch(url, {
+    fetchWithDeadline(url, {
       cache: 'reload' as RequestCache,
       // بعض المتصفحات لا تدعم هذا الخيار لكنه لا يضر عند غيابه
       ...({ serviceWorkers: 'none' } as Record<string, unknown>),
@@ -199,7 +230,7 @@ async function fetchWasmBytes(url: string): Promise<Uint8Array> {
       /* نكمل للمحاولة الثانية على أي حال */
     }
 
-    res = await fetch(url, { cache: 'reload' as RequestCache });
+    res = await fetchWithDeadline(url, { cache: 'reload' as RequestCache });
     bytes = new Uint8Array(await res.arrayBuffer());
 
     if (!res.ok || !looksLikeWasmBytes(bytes)) {
@@ -211,6 +242,18 @@ async function fetchWasmBytes(url: string): Promise<Uint8Array> {
   }
 
   return bytes;
+}
+
+/**
+ * يتخلّص من نواة WASM المخزَّنة في الذاكرة كي يعيد التحميل من الشبكة.
+ *
+ * لماذا: التخزين المؤقت للنواة صحيح للأداء، لكنه يخفي عطلاً حقيقياً. لو
+ * حُمّلت النواة مرة في الجلسة، فأي استدعاء لاحق يعيدها بلا فحص — فمسار
+ * الإصلاح ("امسح الكاش وأعد المحاولة") لا يُنفَّذ فعلاً، ويظل المستخدم في
+ * نفس الحالة. يُستدعى من زر التعافي وشاشة الفشل قبل إعادة المحاولة.
+ */
+export function resetSqlJsCache(): void {
+  SQL = null;
 }
 
 /** يحمّل نواة WASM — يتم مرة واحدة لكل جلسة */
@@ -242,6 +285,7 @@ export async function createOfflineDb(
 ): Promise<{ db: OfflineDb; isNew: boolean }> {
   const sql = await loadSqlJs();
   const existing = await idbGet(FILE_KEY);
+
   const isNew = !existing;
 
   const sqlite = existing ? new sql.Database(existing) : new sql.Database();
