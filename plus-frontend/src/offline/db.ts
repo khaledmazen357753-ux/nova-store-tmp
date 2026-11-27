@@ -25,35 +25,110 @@ const FILE_KEY = 'plus_erp.sqlite';
 let SQL: SqlJsStatic | null = null;
 
 /** يفتح IndexedDB (بديل دائم لـ localStorage الذي سعته 5 ميجا فقط) */
+/**
+ * يفتح IndexedDB — ولا يعلّق أبداً.
+ *
+ * العطل الذي عولج هنا: `indexedDB.open()` قد **يرمي استثناءً متزامناً**
+ * بدل أن يُرجع طلباً. ويحدث ذلك في حالات حقيقية شائعة:
+ *   • التصفح الخاص / المتخفي في بعض المتصفحات
+ *   • إعدادات تمنع تخزين المواقع
+ *   • iframe بلا صلاحية storage-access
+ * وحينها لم يكن `onerror` ولا `onsuccess` يُنادَى إطلاقاً — فيبقى الوعد
+ * معلّقاً للأبد، وتدور شاشة "جارٍ تشغيل محرك الحسابات…" بلا نهاية.
+ *
+ * الإصلاح ثلاثي:
+ *   ١) try/catch حول العملية نفسها لالتقاط الاستثناء المتزامن.
+ *   ٢) مهلة احتياطية: لو لم يرد المتصفح إطلاقاً، نفشل بدل أن ننتظر.
+ *   ٣) تغليف كل عمليات القراءة/الكتابة بنفس الحماية.
+ */
+const IDB_OPEN_TIMEOUT_MS = 10000;
+
 function openIdb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const idb = req.result;
-      if (!idb.objectStoreNames.contains(STORE)) idb.createObjectStore(STORE);
+    if (typeof indexedDB === 'undefined' || !indexedDB) {
+      reject(
+        new Error(
+          'تخزين المتصفح (IndexedDB) غير متاح. هذا يحدث في التصفح الخاص أو حين يمنع المتصفح تخزين بيانات المواقع. استخدم نافذة عادية أو اسمح بالتخزين لهذا الموقع.'
+        )
+      );
+      return;
+    }
+
+    let settled = false;
+    const done = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn();
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+
+    const timer = setTimeout(() => {
+      done(() =>
+        reject(
+          new Error(
+            'لم يستجب تخزين المتصفح (IndexedDB) خلال 10 ثوانٍ. قد يكون محجوباً أو معلّقاً. أعد تحميل الصفحة، وإن تكرر الأمر افتحها في نافذة تصفح عادية.'
+          )
+        )
+      );
+    }, IDB_OPEN_TIMEOUT_MS);
+
+    try {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const idb = req.result;
+        if (!idb.objectStoreNames.contains(STORE)) idb.createObjectStore(STORE);
+      };
+      req.onsuccess = () => done(() => resolve(req.result));
+      req.onerror = () =>
+        done(() => reject(req.error ?? new Error('تعذّر فتح تخزين المتصفح')));
+      // بعض المتصفحات تُغلق الطلب بصمت بدل استدعاء onerror
+      req.onblocked = () =>
+        done(() =>
+          reject(
+            new Error(
+              'تخزين المتصفح مقفل بنسخة أخرى من التطبيق. أغلق التبويبات الأخرى ثم أعد المحاولة.'
+            )
+          )
+        );
+    } catch (err) {
+      // هذا هو المسار الذي كان يعلّق للأبد
+      done(() =>
+        reject(
+          err instanceof Error
+            ? new Error(`تعذّر الوصول لتخزين المتصفح: ${err.message}`)
+            : new Error('تعذّر الوصول لتخزين المتصفح')
+        )
+      );
+    }
   });
 }
 
 async function idbGet(key: string): Promise<Uint8Array | null> {
   const idb = await openIdb();
   return new Promise((resolve, reject) => {
-    const tx = idb.transaction(STORE, 'readonly');
-    const req = tx.objectStore(STORE).get(key);
-    req.onsuccess = () => resolve((req.result as Uint8Array) ?? null);
-    req.onerror = () => reject(req.error);
+    try {
+      const tx = idb.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).get(key);
+      req.onsuccess = () => resolve((req.result as Uint8Array) ?? null);
+      req.onerror = () => reject(req.error ?? new Error('تعذّرت قراءة التخزين'));
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error(String(err)));
+    }
   });
 }
 
 async function idbPut(key: string, value: Uint8Array): Promise<void> {
   const idb = await openIdb();
   return new Promise((resolve, reject) => {
-    const tx = idb.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(value, key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    try {
+      const tx = idb.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error('تعذّرت الكتابة في التخزين'));
+      tx.onabort = () => reject(new Error('أُلغيت الكتابة في تخزين المتصفح'));
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error(String(err)));
+    }
   });
 }
 

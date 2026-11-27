@@ -278,6 +278,35 @@ async function main() {
   globalThis.fetch = realFetch;
   globalThis.__PLUS_WASM_BYTES__ = new Uint8Array(wasmBytes);
 
+  // ── تخزين المتصفح محجوب = رسالة واضحة، لا تعليق أبدي ──
+  // ثلاثة أوضاع حقيقية (تصفح خاص، منع تخزين، طلب لا يرد) كانت كلها تُبقي
+  // الوعد معلّقاً للأبد لأن openIdb لم تكن تلتقط الاستثناء المتزامن ولا
+  // تضع مهلة. الأسوأ أن السبينر يستمر بلا أي إشارة.
+  const realIdb = globalThis.indexedDB;
+  const idbCases = [
+    ['IndexedDB غير موجودة', () => { delete globalThis.indexedDB; }],
+    ['IndexedDB محجوبة (تصفح خاص)', () => {
+      globalThis.indexedDB = { open() { throw new Error('SecurityError: access denied'); } };
+    }],
+  ];
+  for (const [label, setup] of idbCases) {
+    setup();
+    const dbMod = await load('offline/db.js');
+    dbMod.resetSqlJsCache();
+    globalThis.__PLUS_WASM_BYTES__ = new Uint8Array(wasmBytes);
+    let failedFast = false, detail = '';
+    const t = Date.now();
+    try {
+      await dbMod.createOfflineDb('CREATE TABLE t (a);');
+      detail = 'قبلت التشغيل';
+    } catch (e) {
+      failedFast = /تخزين المتصفح|IndexedDB|الوصول لتخزين/.test(String(e?.message ?? ''));
+      detail = `${Date.now() - t}ms — ${String(e?.message ?? e).slice(0, 55)}`;
+    }
+    check(`${label}: تفشل برسالة واضحة لا بتعليق`, failedFast, detail);
+  }
+  globalThis.indexedDB = realIdb;
+
   // استعادة ما حذفناه حتى لا يتأثر باقي التشغيل
   for (const [k, v] of Object.entries(removed)) {
     if (typeof globalThis[k] === 'undefined') { try { globalThis[k] = v; } catch { /* تجاهل */ } }
