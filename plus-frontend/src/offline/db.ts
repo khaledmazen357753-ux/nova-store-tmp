@@ -146,35 +146,104 @@ function looksLikeWasmBytes(bytes: Uint8Array): boolean {
 }
 
 /**
- * `fetch` بمهلة صريحة.
+ * `fetch` يفشل عند **التوقف**، لا عند بلوغ زمن محدد.
  *
- * لماذا: بلا مهلة، لو تجمّد الخادم أو ظلّ اتصال شبكة نصف مفتوح (شائع على
- * شبكات الجوال)، ينتظر `fetch` بلا نهاية. والنتيجة التي رآها المستخدم فعلاً:
- * شاشة "جارٍ تشغيل محرك الحسابات…" تدور للأبد، بلا رسالة ولا زر. الصمت
- * الأسوأ من الخطأ — الخطأ على الأقل يقول للمستخدم ما يفعل.
+ * المحاولة الأولى كانت مهلة ثابتة (20 ثانية). وهذا خطأ في التصميم: ملف
+ * الـ wasm حجمه 688KB على شبكة بطيئة قد يحتاج دقيقة كاملة وهو يعمل بشكل
+ * سليم — فقتله بمهلة عمياء يخلق عطلاً لم يكن موجوداً. والعكس صحيح:
+ * اتصال نصف مفتوح قد لا يرسل بايتاً واحداً أبداً.
+ *
+ * الفرق الحقيقي بين الحالتين هو **هل يصل تقدّم؟** فنستخدم هنا بدل ذلك:
+ *   • ما دام الجسم يتدفّق (كل قراءة تُعيد بايتات) → ننتظر بلا حد.
+ *   • لو مرّت `idleMs` بلا أي بايت جديد → نتوقف ونشرح السبب.
+ *
+ * النتيجة: الشبكات البطيئة tكمل، والمعلّقة حقاً تفشل برسالة مفهومة بدل
+ * سبينر أبدي. وهذا يعالج سبباً حقيقياً رآه المستخدم في الإنتاج.
  */
-function fetchWithDeadline(url: string, init: RequestInit, ms = 20000): Promise<Response> {
-  if (typeof AbortController === 'undefined') return fetch(url, init);
+async function fetchWithStallGuard(
+  url: string,
+  init: RequestInit,
+  idleMs = 30000
+): Promise<Uint8Array> {
+  if (typeof AbortController === 'undefined') {
+    return new Uint8Array(await (await fetch(url, init)).arrayBuffer());
+  }
 
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let stalled = false;
 
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort();
-      reject(
-        new Error(
-          `انتهت مهلة تحميل ملف قاعدة البيانات (${Math.round(ms / 1000)} ثانية) من ${url}. ` +
-            'قد تكون الشبكة بطيئة أو محجوبة. أعد المحاولة، وإن تكرر الأمر تحقّق من الاتصال بالإنترنت.'
-        )
-      );
-    }, ms);
-  });
-
-  return Promise.race([fetch(url, { ...init, signal: controller.signal }), deadline]).finally(() => {
+  const arm = () => {
     if (timer) clearTimeout(timer);
-  }) as Promise<Response>;
+    timer = setTimeout(() => {
+      stalled = true;
+      controller.abort();
+    }, idleMs);
+  };
+
+  arm();
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+
+    // نقرأ الجسم على دفعات: كل دفعة تُعيد ضبط المؤقّت، فالتقدّم يُبقي
+    // المحاولة حيّة حتى لو استغرقت دقائق.
+    const body = res.body;
+    if (!body || typeof body.getReader !== 'function') {
+      arm();
+      const buf = new Uint8Array(await res.arrayBuffer());
+      return buf;
+    }
+
+    const reader = body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      arm();
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        total += value.byteLength;
+      }
+    }
+
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const c of chunks) {
+      out.set(c, offset);
+      offset += c.byteLength;
+    }
+
+    // نحتفظ بحالة الرد للتحقق من ok/headers خارج هذا التابع
+    lastResponseMeta = { ok: res.ok, status: res.status };
+    return out;
+  } catch (err) {
+    if (stalled) {
+      throw new Error(
+        `توقّف تحميل ملف قاعدة البيانات من ${url} — لم تصل أي بيانات جديدة ` +
+          `لأكثر من ${Math.round(idleMs / 1000)} ثانية. قد تكون الشبكة منقطعة أو محجوبة. ` +
+          'أعد المحاولة، وإن تكرر الأمر تحقّق من الاتصال.'
+      );
+    }
+    throw err;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
+
+/** حالة آخر رد من fetchWithStallGuard — نحتاج ok/status للتحقق */
+let lastResponseMeta: { ok: boolean; status: number } = { ok: true, status: 200 };
+
+/**
+ * آخر خطأ حدث أثناء جلب بايتات الـ wasm.
+ *
+ * لماذا نحتفظ به: sql.js يبتلع أي استثناء من التهيئة ويحوّله إلى
+ * `RuntimeError: Aborted(CompileError: …)` برسالة إنجليزية غامضة عن
+ * "section extends past end of the module". فالمهلة التي صمّمناها لأجل
+ * المستخدم كانت تُدفن داخل هذه الرسالة ولا تصل إليه أبداً. نحفظ السبب
+ * الحقيقي هنا ونعرضه بدل رسالة sql.js.
+ */
+let lastWasmFailure: Error | null = null;
 
 /**
  * يحمّل ملف الـ wasm بنفسه بدل ترك sql.js يجريه.
@@ -203,18 +272,19 @@ async function fetchWasmBytes(url: string): Promise<Uint8Array> {
 
   // المتصفح قد يعيد استجابة مخزَّنة من SW لا يمكن تجاوزه بالخيارات،
   // لذلك نعيد المحاولة بعد إلغاء تسجيل الـ SW إن بدت الاستجابة ملوّثة.
-  const attempt = async (): Promise<Response> =>
-    fetchWithDeadline(url, {
+  const attempt = async (): Promise<Uint8Array> => {
+    lastResponseMeta = { ok: true, status: 200 };
+    const bytes = await fetchWithStallGuard(url, {
       cache: 'reload' as RequestCache,
       // بعض المتصفحات لا تدعم هذا الخيار لكنه لا يضر عند غيابه
       ...({ serviceWorkers: 'none' } as Record<string, unknown>),
     });
+    return bytes;
+  };
 
-  let res = await attempt();
+  let bytes = await attempt();
 
-  let bytes = new Uint8Array(await res.arrayBuffer());
-
-  if (!res.ok || !looksLikeWasmBytes(bytes)) {
+  if (!lastResponseMeta.ok || !looksLikeWasmBytes(bytes)) {
     // شفاء ذاتي: نلغي عامل الخدمة ونمسح الكاش ثم نعيد المحاولة مرة واحدة.
     // هذا ما يحرّر المستخدم من SW قديم عالق بلا حاجة لتدخل يدوي منه.
     try {
@@ -230,13 +300,12 @@ async function fetchWasmBytes(url: string): Promise<Uint8Array> {
       /* نكمل للمحاولة الثانية على أي حال */
     }
 
-    res = await fetchWithDeadline(url, { cache: 'reload' as RequestCache });
-    bytes = new Uint8Array(await res.arrayBuffer());
+    bytes = await fetchWithStallGuard(url, { cache: 'reload' as RequestCache });
 
-    if (!res.ok || !looksLikeWasmBytes(bytes)) {
+    if (!lastResponseMeta.ok || !looksLikeWasmBytes(bytes)) {
       throw new Error(
         `ملف قاعدة البيانات (${url}) ليس ملف WebAssembly صالحاً. ` +
-          `حالة الرد: ${res.status}. هذا يعني أن الخادم أو الكاش يقدّم صفحة HTML بدل الملف الثنائي.`
+          `حالة الرد: ${lastResponseMeta.status}. هذا يعني أن الخادم أو الكاش يقدّم صفحة HTML بدل الملف الثنائي.`
       );
     }
   }
@@ -265,12 +334,34 @@ export async function loadSqlJs(): Promise<SqlJsStatic> {
   // المسار قابل للتجاوز لأغراض الاختبار خارج المتصفح فقط
   const base = (globalThis as { __PLUS_WASM_BASE__?: string }).__PLUS_WASM_BASE__ || '/sql-wasm/';
 
-  SQL = await initSqlJs({
-    locateFile: (file: string) => `${base}${file}`,
+  lastWasmFailure = null;
+
+  let wasmBinary: ArrayBuffer;
+  try {
     // نمرّر البايتات محمّلة ومفحوصة مسبقاً — فلا يجرّب sql.js التحميل بنفسه.
     // (sql.js يطلب ArrayBuffer وليس Uint8Array.)
-    wasmBinary: (await fetchWasmBytes(`${base}sql-wasm.wasm`)).buffer as ArrayBuffer,
-  } as Parameters<typeof initSqlJs>[0]);
+    wasmBinary = (await fetchWasmBytes(`${base}sql-wasm.wasm`)).buffer as ArrayBuffer;
+  } catch (err) {
+    // فشل الجلب نفسه (توقف الشبكة، ملف تالف): نحفظه ليعرضه loadSqlJs كما هو
+    lastWasmFailure = err instanceof Error ? err : new Error(String(err));
+    throw lastWasmFailure;
+  }
+
+  try {
+    SQL = await initSqlJs({
+      locateFile: (file: string) => `${base}${file}`,
+      wasmBinary,
+    } as Parameters<typeof initSqlJs>[0]);
+  } catch (err) {
+    // sql.js لفّ الخطأ في RuntimeError إنجليزي غامض. لو كان بايتات ناقصة أو
+    // تالفة، فسببها الحقيقي هو ما يجب أن يقرأه المستخدم لا نصّ sql.js.
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `تعذّر تشغيل نواة قاعدة البيانات (WebAssembly). ` +
+        `الملف المُستلَم لا يصلح للتشغيل — غالباً حُمّل جزئياً بسبب انقطاع الشبكة. ` +
+        `أعد تحميل الصفحة، وإن تكرر الأمر امسح الكاش. (${message.slice(0, 120)})`
+    );
+  }
 
   return SQL;
 }
