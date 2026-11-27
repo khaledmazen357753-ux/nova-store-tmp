@@ -10,7 +10,7 @@
  */
 
 import { execSync } from 'node:child_process';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -22,6 +22,9 @@ const TMP = path.join(ROOT, 'node_modules', '.offline-verify');
 const TMP2 = path.join(ROOT, 'node_modules', '.offline-verify-2');
 // نسخة ثالثة: تحاكي تبويباً ثانياً لم يُهيَّأ بعد (وحدات جديدة تماماً)
 const TMP3 = path.join(ROOT, 'node_modules', '.offline-verify-3');
+// نسخة رابعة: تعتمد على import() طازج تماماً. استيراد ملف CJS بـ ?query
+// يعيد الموديول المخزَّن لا نسخة جديدة، فيبقى SQL مسجّلاً ولا يُنفَّذ التحميل.
+const TMP4 = path.join(ROOT, 'node_modules', '.offline-verify-4');
 
 const results = [];
 function check(name, ok, extra = '') {
@@ -41,7 +44,8 @@ async function main() {
   rmSync(TMP2, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
   rmSync(TMP3, { recursive: true, force: true });
-  for (const out of [TMP, TMP2, TMP3]) {
+  rmSync(TMP4, { recursive: true, force: true });
+  for (const out of [TMP, TMP2, TMP3, TMP4]) {
     execSync(
       `npx esbuild ${ENTRY} --format=cjs --platform=node --outbase=src --outdir=${JSON.stringify(
         out
@@ -66,6 +70,11 @@ async function main() {
   };
   globalThis.__PLUS_WASM_BASE__ =
     pathToFileURL(path.join(ROOT, 'node_modules', 'sql.js', 'dist')).href + '/';
+  // نمرّر بايتات الـ wasm مباشرة: fetch على مسارات file:// غير مدعوم في Node،
+  // والإنتاج يقرأ عبر الشبكة من نفس أصل الموقع.
+  globalThis.__PLUS_WASM_BYTES__ = new Uint8Array(
+    readFileSync(path.join(ROOT, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'))
+  );
   globalThis.performance = globalThis.performance || { now: () => Date.now() };
 
   const load = (rel) => import(pathToFileURL(path.join(TMP, rel)).href);
@@ -452,6 +461,37 @@ async function main() {
     `${countNow()} عميل`
   );
 
+  // ── 15) المحمّل المحصّن للـ wasm ──────────────────────────────
+  // العطل الذي منع فتح النظام كان أعمق من الكاش: sql.js كان يجري التحميل
+  // بنفسه فلا مجال لفحص ما وصل. الآن نحمّل البايتات ونفحص بصمتها قبل
+  // تسليمها، ونرمي خطأً مفهوماً بدل 'both async and sync fetching failed'.
+  const htmlServed = async () => {
+    globalThis.__PLUS_WASM_BYTES__ = new Uint8Array(
+      new TextEncoder().encode('<!doctype html><html>spa fallback</html>')
+    );
+    const hits = [];
+    globalThis.fetch = async (url) => {
+      hits.push(String(url));
+      return new Response(new TextEncoder().encode('<!doctype html>'), { status: 200 });
+    };
+    globalThis.caches = { keys: async () => [], delete: async () => true };
+    try {
+      const dbFresh = await import(pathToFileURL(path.join(TMP4, 'offline/db.js')).href);
+      await dbFresh.loadSqlJs();
+      return { threw: false, message: '', hits };
+    } catch (e) {
+      return { threw: true, message: e.message, hits };
+    }
+  };
+
+  const guard = await htmlServed();
+  check('HTML مكان الـ wasm يُرفض بخطأ واضح', guard.threw === true, guard.threw ? 'رُمي خطأ' : 'قُبل ❌');
+  check(
+    'رسالة الخطأ تشرح السبب لا رسالة sql.js الغامضة',
+    /WebAssembly/.test(guard.message) && !/both async and sync/.test(guard.message),
+    guard.message.slice(0, 70)
+  );
+
   // ── الخلاصة ────────────────────────────────────────────────
   const passed = results.filter((r) => r.ok).length;
   const total = results.length;
@@ -462,6 +502,7 @@ async function main() {
   rmSync(TMP, { recursive: true, force: true });
   rmSync(TMP2, { recursive: true, force: true });
   rmSync(TMP3, { recursive: true, force: true });
+  rmSync(TMP4, { recursive: true, force: true });
   process.exit(passed === total ? 0 : 1);
 }
 
