@@ -11,7 +11,13 @@
  */
 
 import { SCHEMA_SQL, ACCOUNTING_ENGINE_SOURCE, SERVER_BUNDLE } from '../generated/engineBundle';
-import { createOfflineDb, storedBytes, type OfflineDb } from './db';
+import { createOfflineDb, storedBytes, loadSqlJs, type OfflineDb } from './db';
+import {
+  BackupError,
+  inspectSqliteFile,
+  incompatibilityMessage,
+  type SqliteFileInfo,
+} from './sqliteFile';
 import { createExpressStub, dispatch as bridgeDispatch, type RouterRecord } from './bridge';
 import * as cryptoTools from './sha256';
 import { getDeviceTag, claimWriteLock, isWriterTab, onBecomeWriter } from './tabLock';
@@ -209,6 +215,84 @@ export async function persistNow() {
 /** حجم البيانات المحفوظة على الجهاز */
 export async function offlineStorageBytes() {
   return storedBytes();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// النسخ الاحتياطي الثنائي (ملف .sqlite حقيقي)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * يصدّر القاعدة الحالية كملف SQLite ثنائي.
+ * يعمل حتى لو لم تكن هناك تهيئة بعد — نطلبها أولاً لضمان وجود قاعدة.
+ */
+export async function exportSqliteFile(): Promise<Uint8Array> {
+  const st = state ?? (await initOfflineEngine());
+  // حفظ أي تغييرات معلّقة قبل التصدير حتى لا تخرج نسخة ناقصة
+  await st.db.persist();
+  return st.db.exportFile();
+}
+
+/** أسماء جداول النظام الحالي — أساس المقارنة عند الاستعادة */
+function currentTableNames(): string[] {
+  if (!state) return [];
+  try {
+    const res = state.db.sqlite.exec(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+    );
+    return res.length ? res[0].values.map((row) => String(row[0])) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * يفحص ملفاً مرفوعاً **دون أي كتابة**.
+ * هذه هي بوابة الثقة: تُستدعى عند اختيار الملف، ويُعرض تقريرها للمستخدم
+ * قبل أن يقرّر. لا يُكتب بايت واحد قبل موافقته الصريحة.
+ */
+export async function previewSqliteFile(
+  bytes: Uint8Array
+): Promise<{ info: SqliteFileInfo; problem: string | null }> {
+  const st = state ?? (await initOfflineEngine());
+  await st.db.persist();
+
+  const sql = await loadSqlJs();
+  const info = inspectSqliteFile(
+    sql.Database as unknown as new (data?: Uint8Array) => unknown,
+    bytes,
+    currentTableNames()
+  );
+  return { info, problem: incompatibilityMessage(info) };
+}
+
+/**
+ * يستبدل القاعدة الحالية بالملف — بعد أن يكون قد اجتاز `previewSqliteFile`.
+ *
+ * نعيد الفحص هنا من جديد رغم أنه تم في المعاينة، لأن بين اللحظتين قد تمرّ
+ * دقائق. الفحص رخيص (بضع مللي ثوانٍ) والاستعادة الخاطئة مكلفة.
+ */
+export async function restoreSqliteFile(
+  bytes: Uint8Array
+): Promise<{ tables: number; rows: number }> {
+  const st = state ?? (await initOfflineEngine());
+
+  const sql = await loadSqlJs();
+  const info = inspectSqliteFile(
+    sql.Database as unknown as new (data?: Uint8Array) => unknown,
+    bytes,
+    currentTableNames()
+  );
+
+  const problem = incompatibilityMessage(info);
+  if (problem) throw new BackupError(problem, 'INCOMPATIBLE');
+
+  await st.db.replaceWithFile(bytes);
+
+  // نعيد تهيئة الحالة الداخلية حتى لا تظل القاعدة القديمة في الذاكرة
+  state = null;
+  initPromise = null;
+
+  return { tables: info.tables, rows: info.rows };
 }
 
 /** يمسح كل البيانات ويعيد النظام لحالته الأولى */

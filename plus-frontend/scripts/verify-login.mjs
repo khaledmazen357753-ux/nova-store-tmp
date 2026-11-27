@@ -25,7 +25,7 @@ const check = (name, cond, detail = '') => {
 
 async function main() {
   rmSync(OUT, { recursive: true, force: true });
-  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/lib/api.ts src/generated/engineBundle.ts';
+  const ENTRY = 'src/offline/bridge.ts src/offline/db.ts src/offline/engine.ts src/offline/sha256.ts src/offline/tabLock.ts src/offline/sqliteFile.ts src/lib/api.ts src/generated/engineBundle.ts';
   execSync(
     `npx esbuild ${ENTRY} --format=cjs --platform=node --outbase=src --outdir=${JSON.stringify(OUT)} --loader:.ts=ts --log-level=error`,
     { cwd: ROOT }
