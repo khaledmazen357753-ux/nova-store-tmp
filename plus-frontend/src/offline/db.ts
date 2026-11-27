@@ -98,15 +98,102 @@ export interface OfflineDb {
   readonly sqlite: SqlJsDatabase;
 }
 
+/**
+ * هل هذه البايتات ملف WebAssembly فعلاً؟
+ *
+ * كل ملفات wasm تبدأ بالبصمة السحرية 0x00 0x61 0x73 0x6d ("\0asm").
+ */
+function looksLikeWasmBytes(bytes: Uint8Array): boolean {
+  return (
+    bytes.length > 8 &&
+    bytes[0] === 0x00 && bytes[1] === 0x61 && bytes[2] === 0x73 && bytes[3] === 0x6d
+  );
+}
+
+/**
+ * يحمّل ملف الـ wasm بنفسه بدل ترك sql.js يجريه.
+ *
+ * السبب: كان العطل القاتل أن Service Worker (من إصدار قديم) يقدّم صفحة
+ * HTML مكان الملف الثنائي من الكاش. وحتى بعد إصلاح الكاش، يبقى المستخدمون
+ * الذين عندهم الإصدار القديم محتجَزين. تحميل البايتات هنا مباشرة — مع
+ * تجاوز أي Service Worker وفحص البصمة السحرية — يعالج السبب لا العَرَض،
+ * ويعمل حتى لو كان الكاش القديم ما زال مسيطراً.
+ */
+async function fetchWasmBytes(url: string): Promise<Uint8Array> {
+  // خارج المتصفح (اختبارات Node) لا يوجد fetch لمسارات file:// — نقرأ
+  // الملف مباشرة. هذا المسار لا يُستخدم في الإنتاج إطلاقاً.
+  //
+  // مهم: البايتات المحقونة تمرّ بنفس الفحص. أي مسار يتخطى الفحص يصبح
+  // ثغرة، وقد أثبت الاختبار ذلك: كان HTML يُقبل بلا اعتراض.
+  const injected = (globalThis as { __PLUS_WASM_BYTES__?: Uint8Array }).__PLUS_WASM_BYTES__;
+  if (injected) {
+    if (!looksLikeWasmBytes(injected)) {
+      throw new Error(
+        'ملف قاعدة البيانات (WebAssembly) غير صالح: البايتات لا تحمل بصمة wasm.'
+      );
+    }
+    return injected;
+  }
+
+  // المتصفح قد يعيد استجابة مخزَّنة من SW لا يمكن تجاوزه بالخيارات،
+  // لذلك نعيد المحاولة بعد إلغاء تسجيل الـ SW إن بدت الاستجابة ملوّثة.
+  const attempt = async (): Promise<Response> =>
+    fetch(url, {
+      cache: 'reload' as RequestCache,
+      // بعض المتصفحات لا تدعم هذا الخيار لكنه لا يضر عند غيابه
+      ...({ serviceWorkers: 'none' } as Record<string, unknown>),
+    });
+
+  let res = await attempt();
+
+  let bytes = new Uint8Array(await res.arrayBuffer());
+
+  if (!res.ok || !looksLikeWasmBytes(bytes)) {
+    // شفاء ذاتي: نلغي عامل الخدمة ونمسح الكاش ثم نعيد المحاولة مرة واحدة.
+    // هذا ما يحرّر المستخدم من SW قديم عالق بلا حاجة لتدخل يدوي منه.
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if ('caches' in globalThis) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      /* نكمل للمحاولة الثانية على أي حال */
+    }
+
+    res = await fetch(url, { cache: 'reload' as RequestCache });
+    bytes = new Uint8Array(await res.arrayBuffer());
+
+    if (!res.ok || !looksLikeWasmBytes(bytes)) {
+      throw new Error(
+        `ملف قاعدة البيانات (${url}) ليس ملف WebAssembly صالحاً. ` +
+          `حالة الرد: ${res.status}. هذا يعني أن الخادم أو الكاش يقدّم صفحة HTML بدل الملف الثنائي.`
+      );
+    }
+  }
+
+  return bytes;
+}
+
 /** يحمّل نواة WASM — يتم مرة واحدة لكل جلسة */
 export async function loadSqlJs(): Promise<SqlJsStatic> {
-  if (!SQL) {
-    // ملف الـ wasm يُنسخ إلى public/sql-wasm/ ويُحمَّل من نفس أصل الموقع،
-    // فيعمل التطبيق أوفلاين بالكامل بعد أول زيارة.
-    // المسار قابل للتجاوز لأغراض الاختبار خارج المتصفح فقط
-    const base = (globalThis as { __PLUS_WASM_BASE__?: string }).__PLUS_WASM_BASE__ || '/sql-wasm/';
-    SQL = await initSqlJs({ locateFile: (file: string) => `${base}${file}` });
-  }
+  if (SQL) return SQL;
+
+  // ملف الـ wasm يُنسخ إلى public/sql-wasm/ ويُحمَّل من نفس أصل الموقع،
+  // فيعمل التطبيق أوفلاين بالكامل بعد أول زيارة.
+  // المسار قابل للتجاوز لأغراض الاختبار خارج المتصفح فقط
+  const base = (globalThis as { __PLUS_WASM_BASE__?: string }).__PLUS_WASM_BASE__ || '/sql-wasm/';
+
+  SQL = await initSqlJs({
+    locateFile: (file: string) => `${base}${file}`,
+    // نمرّر البايتات محمّلة ومفحوصة مسبقاً — فلا يجرّب sql.js التحميل بنفسه.
+    // (sql.js يطلب ArrayBuffer وليس Uint8Array.)
+    wasmBinary: (await fetchWasmBytes(`${base}sql-wasm.wasm`)).buffer as ArrayBuffer,
+  } as Parameters<typeof initSqlJs>[0]);
+
   return SQL;
 }
 
