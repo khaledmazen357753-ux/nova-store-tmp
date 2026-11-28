@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { initOfflineEngine } from './offline/engine';
 import { resetSqlJsCache } from './offline/db';
 import { getDataMode } from './lib/api';
@@ -101,7 +102,12 @@ async function boot() {
   root.innerHTML = '';
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <App />
+      {/* الحاجز الأعلى: يمسك أي خطأ في الشجرة كلها. بدونه كان خطأ واحد في
+          مكوّن واحد يمحو الصفحة بالكامل فتظهر شاشة سوداء بلا أي معلومات —
+          وهو بالضبط ما حدث في شاشة طلبات التعديل. */}
+      <ErrorBoundary area="النظام">
+        <App />
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }

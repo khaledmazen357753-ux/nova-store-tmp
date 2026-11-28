@@ -152,6 +152,15 @@ export const ChangeRequests: React.FC<{ open: boolean; onClose: () => void }> = 
   const [note, setNote] = useState('');
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // رسالة تأكيد تختفي تلقائياً.
+  //
+  // ⚠ هذا الـHook كان موضوعاً **بعد** `if (!open) return null` في أول
+  // إصدار، فكان React يرى عدد Hooks مختلفاً بين تصيير وآخر ويرمي:
+  //   "Rendered more hooks than during the previous render"
+  // وبلا Error Boundary كان الانهيار يمحو الشجرة كلها → شاشة سوداء عند كل
+  // فتح. القاعدة: **كل hooks تُنادى قبل أي return مبكر**، بلا استثناء.
+  const [flash, setFlash] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -186,6 +195,12 @@ export const ChangeRequests: React.FC<{ open: boolean; onClose: () => void }> = 
       setStatusFilter('pending');
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 6000);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   if (!open) return null;
 
@@ -243,13 +258,6 @@ export const ChangeRequests: React.FC<{ open: boolean; onClose: () => void }> = 
       setBusy(null);
     }
   };
-
-  const [flash, setFlash] = useState<string | null>(null);
-  useEffect(() => {
-    if (!flash) return;
-    const t = setTimeout(() => setFlash(null), 6000);
-    return () => clearTimeout(t);
-  }, [flash]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
