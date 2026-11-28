@@ -20,7 +20,9 @@
     "verify:migration": "node scripts/verify-migration.mjs",
     "verify:migration:real": "node scripts/verify-migration-real.mjs",
     "verify:procurement": "node scripts/verify-procurement.mjs",
-    "verify:procurement:ui": "node scripts/verify-procurement-ui.mjs"
+    "verify:procurement:ui": "node scripts/verify-procurement-ui.mjs",
+    "preview:dist": "node scripts/preview-server.mjs",
+    "verify:links": "node scripts/verify-links.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",

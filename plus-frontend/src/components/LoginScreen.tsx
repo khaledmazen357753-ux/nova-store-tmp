@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lock, User, ShieldCheck, Sparkles, LogIn } from 'lucide-react';
+import { Lock, User, ShieldCheck, Sparkles, LogIn, Truck, ArrowLeft } from 'lucide-react';
 import { apiFetch, getApiBaseUrl, setCustomApiBaseUrl, setStoredToken } from '../lib/api';
 import { PlusCrossEmblem, PlusWatermark } from './BrandIdentity';
 
@@ -192,6 +192,33 @@ export const LoginScreen: React.FC<{
               </button>
             </form>
           </div>
+
+          {/*
+            رابط إلى الموقع الشقيق.
+            الموقعان مستقلان في البيانات والجلسة بطلب صريح — لكن «مستقل»
+            لا يعني «مقطوع». من يدخل النظام العام قد يكون محاسباً يحتاج
+            فاتورة شراء، والعكس. بدون هذا الرابط يبقى المستخدم مطالباً بحفظ
+            مسار /procurement في ذاكرته.
+          */}
+          <a
+            href="/procurement"
+            className="mt-6 flex items-center justify-between gap-3 p-3 rounded-xl bg-[#0C0C11] hover:bg-[#17161E] border border-[#D4AF37]/25 hover:border-[#D4AF37]/60 transition-all group no-print"
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/40 flex items-center justify-center shrink-0">
+                <Truck className="w-4 h-4 text-[#D4AF37]" />
+              </span>
+              <span className="text-right">
+                <span className="block text-xs font-bold text-[#F5EFE0] group-hover:text-[#FCE79C]">
+                  موقع المشتريات والمخازن
+                </span>
+                <span className="block text-[10px] text-[#9E9682] mt-0.5">
+                  أوامر توريد وفواتير ومخزون — بجلسة منفصلة
+                </span>
+              </span>
+            </span>
+            <ArrowLeft className="w-4 h-4 text-[#D4AF37] shrink-0" />
+          </a>
 
           {/* حسابات الدخول السريع حسب الصلاحيات الوظيفية */}
           <div className="mt-7 pt-5 border-t border-[#D4AF37]/20">
