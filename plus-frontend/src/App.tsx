@@ -21,6 +21,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { DataModeBadge } from './components/DataModeBadge';
 import { OfflineSettings } from './components/OfflineSettings';
 import { ChangeRequests } from './components/ChangeRequests';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ReadOnlyTabBanner } from './components/ReadOnlyTabBanner';
 import { DashboardModule, ModuleKey } from './modules/DashboardModule';
 import { MasterDataModule } from './modules/MasterDataModule';
@@ -285,8 +286,14 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      <OfflineSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <ChangeRequests open={changesOpen} onClose={() => setChangesOpen(false)} />
+      <ErrorBoundary area="شاشة إعدادات البيانات">
+        <OfflineSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      </ErrorBoundary>
+      {/* حاجز محلي: لو انهارت هذه الشاشة، يرى المستخدم رسالة قابلة للإغلاق
+          بدل شاشة سوداء تمحو التطبيق كله. */}
+      <ErrorBoundary area="شاشة طلبات التعديل">
+        <ChangeRequests open={changesOpen} onClose={() => setChangesOpen(false)} />
+      </ErrorBoundary>
     </div>
   );
 };
