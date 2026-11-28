@@ -5,32 +5,71 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!api/|sw\\.js|manifest\\.webmanifest|sql-wasm/|icons/|assets/|plus-logo\\.jpeg).*)",
+      "source": "/procurement",
+      "destination": "/procurement.html"
+    },
+    {
+      "source": "/procurement/(.*)",
+      "destination": "/procurement.html"
+    },
+    {
+      "source": "/((?!api/|sw\\.js|manifest\\.webmanifest|procurement\\.html|sql-wasm/|icons/|assets/|plus-logo\\.jpeg).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
+      "source": "/procurement.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
       "source": "/manifest.webmanifest",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/sql-wasm/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
-        { "key": "Content-Type", "value": "application/wasm" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/wasm"
+        }
       ]
     },
     {
       "source": "/assets/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }

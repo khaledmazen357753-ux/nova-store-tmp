@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>المشتريات والمخازن والموردون | PLUS Procurement Suite</title>
+    <meta
+      name="description"
+      content="موقع مستقل لإدارة المشتريات والمخازن والموردين: أوامر التوريد، فواتير الشراء، مردودات المشتريات، سدادات الموردين، وأذون الإضافة والصرف — بقيد يومية متوازن لكل مستند."
+    />
+    <link rel="icon" type="image/jpeg" href="/plus-logo.jpeg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="theme-color" content="#060608" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* شاشة افتتاح مضمّنة — تظهر قبل تحميل أي ملف، فالمستخدم لا يرى فراغاً */
+      #proc-boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #060608;
+        direction: rtl;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      #proc-boot .ring {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 18px;
+        border-radius: 50%;
+        border: 2px solid rgba(212, 175, 55, 0.25);
+        border-top-color: #d4af37;
+        animation: procSpin 0.85s linear infinite;
+      }
+      #proc-boot .t1 { color: #d4af37; font-size: 14px; font-weight: 800; }
+      #proc-boot .t2 { color: #7c7565; font-size: 11px; margin-top: 6px; }
+      @keyframes procSpin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body class="bg-[#060608] text-[#F7F3E8] antialiased selection:bg-[#D4AF37]/30">
+    <div id="root">
+      <div id="proc-boot">
+        <div style="text-align: center">
+          <div class="ring"></div>
+          <div class="t1">المشتريات والمخازن</div>
+          <div class="t2">جارٍ تشغيل محرك الحسابات المحلي…</div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/procurement/main.tsx"></script>
+  </body>
+</html>

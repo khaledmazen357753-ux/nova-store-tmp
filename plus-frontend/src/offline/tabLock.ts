@@ -9,10 +9,26 @@
  * لا يُستخدم إطلاقاً في الوضع السحابي، فشكل الأرقام هناك يبقى كما هو.
  */
 const DEVICE_TAG_KEY = 'plus_erp_device_tag';
+
+/**
+ * بصمة مساحة العمل — تمنع تبويب موقع المشتريات من سحب قفل كتابة النظام
+ * الكامل (والعكس). القفل واحد لكل أصل، وبدون الفصل يظن أحد الموقعين أنه
+ * تبويب للعرض فقط رغم أن كل واحد له قاعدة مستقلة تماماً.
+ */
+let lockScope = '';
+export function setLockScope(scope: string) {
+  lockScope = scope ? `_${scope}` : '';
+}
+function writeLockName() {
+  return `${WRITE_LOCK}${lockScope}`;
+}
+function deviceTagKey() {
+  return lockScope ? `${DEVICE_TAG_KEY}_${lockScope.slice(1)}` : DEVICE_TAG_KEY;
+}
 const TAG_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // بلا حروف متشابهة
 
 export function getDeviceTag(): string {
-  let tag = localStorage.getItem(DEVICE_TAG_KEY);
+  let tag = localStorage.getItem(deviceTagKey());
   if (tag && /^[A-Z0-9]{4}$/.test(tag)) return tag;
 
   const bytes = new Uint8Array(4);
@@ -20,7 +36,7 @@ export function getDeviceTag(): string {
   tag = Array.from(bytes)
     .map((b) => TAG_ALPHABET[b % TAG_ALPHABET.length])
     .join('');
-  localStorage.setItem(DEVICE_TAG_KEY, tag);
+  localStorage.setItem(deviceTagKey(), tag);
   return tag;
 }
 
@@ -94,7 +110,7 @@ export function claimWriteLock(): Promise<boolean> {
   });
 
   // نحتفظ بالقفل ما دام التبويب مفتوحاً (لا نُعيد الوعد أبداً)
-  void navigator.locks.request(WRITE_LOCK, { mode: 'exclusive' }, () => {
+  void navigator.locks.request(writeLockName(), { mode: 'exclusive' }, () => {
     setWriterState(true);
     grantResolve?.();
     return new Promise<void>(() => {
@@ -108,7 +124,7 @@ export function claimWriteLock(): Promise<boolean> {
       setWriterState(false);
 
       // نراقب تحرّر القفل: إن أُغلق التبويب الكاتب نأخذه ونعيد التحميل
-      void navigator.locks.request(WRITE_LOCK, { mode: 'exclusive' }, () => {
+      void navigator.locks.request(writeLockName(), { mode: 'exclusive' }, () => {
         setWriterState(true);
         if (becomeWriterHook) becomeWriterHook();
         return new Promise<void>(() => {});

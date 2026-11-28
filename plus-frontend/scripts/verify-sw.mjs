@@ -112,7 +112,14 @@ function makeEnv(network) {
 }
 
 // ── ٥) الإصدار تغيّر (وإلا الكاش القديم يبقى) ──
-check('إصدار الكاش رُفع', /plus-erp-v2/.test(src) && !/plus-erp-v1/.test(src));
+//
+// لا نعلّق الفحص على رقم إصدار بعينه: كل رفع إصدار كان سيُفشل الفحص
+// ويُجبر على تعديله — فيفقد الفحص معناه. الشرط الحقيقي هو أن الإصدار
+// الحالي متقدّم على v1 الذي عانى منه المستخدم في عطل الـ wasm.
+const versionMatch = src.match(/const VERSION = 'plus-erp-v(\d+)'/);
+const currentVersion = Number(versionMatch?.[1] || 0);
+check('إصدار الكاش رُفع فوق v1', currentVersion >= 2, `v${currentVersion}`);
+check('لا نسخة v1 قديمة معلّقة في الملف', !/plus-erp-v1/.test(src));
 
 console.log(`\nالنتيجة: ${pass} نجح | ${fail} فشل`);
 process.exit(fail?1:0);

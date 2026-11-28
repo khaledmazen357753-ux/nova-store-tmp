@@ -14,7 +14,7 @@
  * الحسابات قادراً على العمل من أول فتحة بلا شبكة.
  */
 
-const VERSION = 'plus-erp-v2';
+const VERSION = 'plus-erp-v3';
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -34,6 +34,10 @@ function looksLikeWasm(buffer) {
 const PRECACHE = [
   '/',
   '/index.html',
+  // موقع المشتريات: صفحة مستقلة لها نفس الحزمة ونفس الـ wasm. تخزينها هنا
+  // يعني أنه يفتح بلا إنترنت حتى لو لم يزره المستخدم قبل انقطاع الشبكة.
+  '/procurement',
+  '/procurement.html',
   '/manifest.webmanifest',
   '/sql-wasm/sql-wasm.wasm',
   '/plus-logo.jpeg',

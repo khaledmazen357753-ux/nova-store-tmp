@@ -22,6 +22,31 @@ const DB_NAME = 'plus_erp_offline';
 const STORE = 'sqlite';
 const FILE_KEY = 'plus_erp.sqlite';
 
+/**
+ * بصمة قاعدة البيانات — تُلحَق باسم قاعدة IndexedDB وبمفتاح الملف.
+ *
+ * لماذا؟ الموقعان (النظام الكامل وموقع المشتريات) يعملان على نفس الأصل،
+ * وIndexedDB وlocalStorage مشتركان بينهما. بلا بصمة، أول ما يفتح موقع
+ * المشتريات سيجد ملف SQLite الخاص بالنظام الكامل ويظنّه قاعدته.
+ *
+ * الوضع الافتراضي '' يعطي الأسماء القديمة بالحرف — فلا تُفقد بيانات أي
+ * مستخدم حالي ولا يلزم أي ترحيل.
+ */
+let nsPrefix = '';
+
+/** يضبط بصمة القاعدة قبل أي فتح. لا يمس الملفات المحفوظة لغير المفصّل. */
+export function setDbNamespace(namespace: string) {
+  nsPrefix = namespace ? `${namespace}_` : '';
+}
+
+function dbName() {
+  return nsPrefix ? `${DB_NAME}_${nsPrefix.replace(/_$/, '')}` : DB_NAME;
+}
+
+function fileKey() {
+  return nsPrefix ? `${FILE_KEY.replace('.sqlite', '')}_${nsPrefix.replace(/_$/, '')}.sqlite` : FILE_KEY;
+}
+
 let SQL: SqlJsStatic | null = null;
 
 /** يفتح IndexedDB (بديل دائم لـ localStorage الذي سعته 5 ميجا فقط) */
@@ -73,7 +98,7 @@ function openIdb(): Promise<IDBDatabase> {
     }, IDB_OPEN_TIMEOUT_MS);
 
     try {
-      const req = indexedDB.open(DB_NAME, 1);
+      const req = indexedDB.open(dbName(), 1);
       req.onupgradeneeded = () => {
         const idb = req.result;
         if (!idb.objectStoreNames.contains(STORE)) idb.createObjectStore(STORE);
@@ -145,7 +170,7 @@ export async function idbDelete(key: string): Promise<void> {
 /** يقرأ حجم الملف المحفوظ بالبايت (لعرضه في شاشة الإعدادات) */
 export async function storedBytes(): Promise<number> {
   try {
-    const data = await idbGet(FILE_KEY);
+    const data = await idbGet(fileKey());
     return data ? data.byteLength : 0;
   } catch {
     return 0;
@@ -454,10 +479,10 @@ export async function loadSqlJs(): Promise<SqlJsStatic> {
  */
 export async function createOfflineDb(
   schemaSql: string,
-  seedFn?: (db: OfflineDb) => void
+  seedFn?: (db: OfflineDb) => void | Promise<unknown>
 ): Promise<{ db: OfflineDb; isNew: boolean }> {
   const sql = await loadSqlJs();
-  const existing = await idbGet(FILE_KEY);
+  const existing = await idbGet(fileKey());
 
   const isNew = !existing;
 
@@ -510,13 +535,13 @@ export async function createOfflineDb(
     },
     async persist() {
       const bytes = sqlite.export();
-      await idbPut(FILE_KEY, bytes);
+      await idbPut(fileKey(), bytes);
     },
     size() {
       return sqlite.export().byteLength;
     },
     async reset() {
-      await idbDelete(FILE_KEY);
+      await idbDelete(fileKey());
     },
     /**
      * تصدير ثنائي مباشر.
@@ -538,7 +563,7 @@ export async function createOfflineDb(
      * لا كود جديد في المحرّك، ولا احتمال لعدم تطابق الحالة الداخلية.
      */
     async replaceWithFile(bytes: Uint8Array) {
-      await idbPut(FILE_KEY, bytes);
+      await idbPut(fileKey(), bytes);
     },
     sqlite,
   };
@@ -571,7 +596,9 @@ export async function createOfflineDb(
   // الجديد والزراعة — بعض الجداول تُنشأ قبل الجداول التي تشير إليها.
   db.exec('PRAGMA foreign_keys = OFF;');
   db.exec(schemaSql);
-  if (isNew && seedFn) seedFn(db);
+  // ننتظر نتيجة الزراعة: بعض المواقع تبني بياناتها على مرحلتين، ولو لم
+  // ننتظر لَحُفظت القاعدة قبل أن تكتمل بياناتها.
+  if (isNew && seedFn) await seedFn(db);
   db.exec('PRAGMA foreign_keys = ON;');
 
   // نحفظ في الحالتين: على قاعدة قديمة، هذا يثبّت الجداول الجديدة على
