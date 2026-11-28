@@ -88,6 +88,32 @@ function makeError(message: string, code?: string, status?: number): ApiError {
   return err;
 }
 
+/**
+ * مسارات الجلسة — تُستثنى من قفل الكتابة.
+ *
+ * ═══ العطل الذي أصلحه هذا الاستثناء ═══════════════════════════════
+ *
+ * المستخدم فتح الموقع في تبويبين فظهر له في الثاني:
+ *   «النظام مفتوح في تبويب آخر… أغلقه ثم أعد تحميل هذه الصفحة»
+ * ثم لم يجد زر إعادة تحميل. كل محاولة دخول تُرفض، ولا مخرج.
+ *
+ * والسبب أن قفل الكتابة كان يشمل تسجيل الدخول. لكن الدخول ليس كتابة في
+ * بيانات الأعمال: هو قراءة مستخدم + تحديث `last_login` + سطر تدقيق. لا
+ * يمكن أن يُفسد قاعدة، ولا يتعارض مع التبويب الكاتب الذي يضيف فاتورة.
+ *
+ * ما يُبقى محمياً هو ما يهم فعلاً: أي POST/PUT/DELETE على بيانات الأعمال
+ * يظل مرفوضاً (الفحص verify-tab-login يثبت ذلك في الاتجاهين).
+ */
+function isSessionPath(rawPath: string): boolean {
+  const p = String(rawPath || '');
+  return (
+    p === '/api/auth/login' ||
+    p === '/api/auth/me' ||
+    p === '/api/auth/demo-accounts' ||
+    p.startsWith('/api/auth/logout')
+  );
+}
+
 export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   // موقع المشتريات يستدعي '/procurement/api/...' — نحذف البادئة لنصل
   // لنفس المسارات التي يعرّفها كود الخادم بالحرف، بلا نسخة ثانية منها.
@@ -129,7 +155,7 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
 
   // تبويب للعرض فقط: نرفض الكتابة قبل وصولها للمحرك.
   // (تبويبان يكتبان في نفس القاعدة المحلية يحفظ كلٌّ منهما صورته فوق الأخرى.)
-  if (method !== 'GET' && !canWrite()) {
+  if (method !== 'GET' && !canWrite() && !isSessionPath(path)) {
     throw makeError(
       'النظام مفتوح في تبويب آخر وهو التبويب النشط للكتابة. اعمل من ذلك التبويب، أو أغلقه ثم أعد تحميل هذه الصفحة.',
       'READ_ONLY_TAB',

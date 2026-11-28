@@ -15,6 +15,7 @@ import {
   Download,
   WifiOff,
   ArrowUpLeft,
+  RotateCw,
 } from 'lucide-react';
 import { apiFetch, getStoredToken, setStoredToken } from '../lib/api';
 import { canWrite, persistNow } from '../offline/engine';
@@ -265,9 +266,25 @@ export const ProcurementApp: React.FC = () => {
               <LogOut className="w-3 h-3" /> خروج
             </button>
           </div>
+          {/*
+            تبويب للعرض فقط — ومعها مخرج.
+            الرسالة السابقة كانت تقول «العرض فقط» بلا أن تشرح كيف يخرج
+            المستخدم من الحالة. من فتح تبويباً ثانياً بالخطأ يبقى عالقاً:
+            كل حفظ يُرفض، ولا زرّ يوصله لحالة الكتابة. زر إعادة التحميل
+            يجعل التبويب يطلب القفل من جديد — فإن كان الكاتب قد أُغلق أخذ
+            هو القفل، وإن كان ما زال مفتوحاً بقيت الرسالة صادقة.
+          */}
           {!writable && (
-            <div className="text-[9px] text-amber-300 leading-relaxed p-1.5 rounded bg-amber-950/30 border border-amber-800/40">
-              تبويب للعرض فقط — التبويب الآخر هو النشط للكتابة
+            <div className="text-[9px] leading-relaxed p-1.5 rounded bg-amber-950/30 border border-amber-800/40 space-y-1.5">
+              <div className="text-amber-300">
+                تبويب للعرض فقط — التبويب الآخر هو النشط للكتابة
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full flex items-center justify-center gap-1 px-2 py-1 rounded bg-amber-900/30 hover:bg-amber-800/40 border border-amber-700/40 text-amber-200 cursor-pointer"
+              >
+                <RotateCw className="w-3 h-3" /> إعادة تحميل لأخذ الكتابة
+              </button>
             </div>
           )}
         </div>
