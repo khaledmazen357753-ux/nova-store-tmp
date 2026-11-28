@@ -190,6 +190,14 @@ export const ProcurementLogin: React.FC<{ onSuccess: (session: any) => void }> =
               </div>
             </div>
           )}
+
+          {/* طريق العودة — زائر وصل هنا بالخطأ يجب ألا يعلق */}
+          <a
+            href="/"
+            className="mt-5 flex items-center justify-center gap-1.5 text-[10px] text-[#8C8474] hover:text-[#E5C158] transition-colors"
+          >
+            <ArrowLeft className="w-3 h-3" /> العودة إلى النظام المحاسبي الكامل
+          </a>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import {
   X,
   Download,
   WifiOff,
+  ArrowUpLeft,
 } from 'lucide-react';
 import { apiFetch, getStoredToken, setStoredToken } from '../lib/api';
 import { canWrite, persistNow } from '../offline/engine';
@@ -237,6 +238,18 @@ export const ProcurementApp: React.FC = () => {
         <div className="p-3 mt-2 border-t border-[#D4AF37]/12 space-y-2">
           <div className="text-[10px] text-[#F7F3E8] font-bold truncate">{user.full_name}</div>
           <div className="text-[9px] text-[#6F6A5D]">{user.role_name}</div>
+          {/*
+            الرجوع إلى النظام الكامل.
+            قاعدة بيانات هذا الموقع منفصلة، والجلسة منفصلة — فالانتقال هنا
+            مجرّد تنقّل بين صفحتين، لا تصدير بيانات ولا مشاركة توكن.
+          */}
+          <a
+            href="/"
+            className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 rounded-lg bg-[#12121A] border border-[#D4AF37]/25 text-[9px] text-[#A9A292] hover:text-[#E5C158] hover:border-[#D4AF37]/50 cursor-pointer transition-colors"
+            title="النظام المحاسبي الكامل — له بياناته وجلسته المستقلة"
+          >
+            <ArrowUpLeft className="w-3 h-3" /> النظام الكامل
+          </a>
           <div className="flex gap-1.5 pt-1">
             <button
               onClick={exportBackup}

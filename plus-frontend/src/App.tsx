@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Settings2,
+  ArrowLeft,
   LayoutDashboard,
   Database,
   Landmark,
@@ -222,6 +223,23 @@ export const App: React.FC = () => {
             <Settings2 className="w-3.5 h-3.5 text-[#D4AF37]" />
             <span>إعدادات البيانات والتخزين</span>
           </button>
+          {/*
+            الموقع الشقيق: موقع المشتريات.
+            هنا في القائمة الجانبية — لا في شاشة الدخول وحدها — لأن هذا
+            النظام يسجّل الدخول تلقائياً في وضع المعاينة، فلا يمرّ المستخدم
+            على شاشة الدخول أصلاً. رابط لا يراه أحد ليس رابطاً.
+            الجلسة والبيانات منفصلتان: الانتقال تنقّل بين صفحتين فقط.
+          */}
+          <a
+            href="/procurement"
+            className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 hover:border-[#D4AF37]/60 text-[#E2DAC6] hover:text-[#FCE79C] flex items-center justify-between gap-2 cursor-pointer transition-colors no-print"
+          >
+            <span className="flex items-center gap-2">
+              <Truck className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>موقع المشتريات والمخازن</span>
+            </span>
+            <ArrowLeft className="w-3 h-3 text-[#D4AF37]" />
+          </a>
           <button
             onClick={() => {
               setStoredToken(null);
