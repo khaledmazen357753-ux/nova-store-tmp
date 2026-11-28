@@ -11,7 +11,7 @@
  */
 
 import { SCHEMA_SQL, ACCOUNTING_ENGINE_SOURCE, SERVER_BUNDLE } from '../generated/engineBundle';
-import { createOfflineDb, storedBytes, loadSqlJs, type OfflineDb } from './db';
+import { createOfflineDb, setDbNamespace, storedBytes, loadSqlJs, type OfflineDb } from './db';
 import {
   BackupError,
   inspectSqliteFile,
@@ -20,7 +20,68 @@ import {
 } from './sqliteFile';
 import { createExpressStub, dispatch as bridgeDispatch, type RouterRecord } from './bridge';
 import * as cryptoTools from './sha256';
-import { getDeviceTag, claimWriteLock, isWriterTab, onBecomeWriter } from './tabLock';
+import { getDeviceTag, claimWriteLock, isWriterTab, onBecomeWriter, setLockScope } from './tabLock';
+
+/**
+ * إعداد مساحة عمل مستقلة تماماً.
+ *
+ * الاستخدام الحقيقي: موقع «المشتريات والمخازن والموردين» يحتاج قاعدة
+ * بيانات **منفصلة** عن قاعدة النظام الكامل — نفس الأصل (نفس الدومين)،
+ * فلولا الفصل لكانا يتقاسمان IndexedDB وlocalStorage وقفل التبويب.
+ *
+ * الفصل يتم على أربعة مستويات، وكلها ضرورية:
+ *   ١) اسم قاعدة IndexedDB ومفتاح ملف SQLite  (db.ts)
+ *   ٢) اسم قفل الكتابة ورمز الجهاز            (tabLock.ts)
+ *   ٣) الوحدات المركَّبة من كود الخادم         (هنا)
+ *   ٤) بادئة مسارات الـ API                    (lib/api.ts)
+ */
+export interface EngineConfig {
+  /** بصمة القاعدة — '' تعني قاعدة النظام الكامل كما هي اليوم */
+  namespace?: string;
+  /** البادئة التي تُسبق كل مسار، مثل '/procurement' */
+  apiPrefix?: string;
+  /** الوحدات المركَّبة؛ الافتراضي كل الوحدات */
+  mount?: Partial<Record<'master' | 'transactions' | 'reports' | 'admin' | 'changeRequests', boolean>>;
+  /** قناة تشخيص للتمييز في الطرفية */
+  label?: string;
+  /**
+   * دالة الزراعة — الافتراضي بيانات الشركة الكاملة من كود الخادم.
+   * موقع المشتريات يمرّر `null` ليزرع بياناته هو، بلا مبيعات ورواتب
+   * لا تخصّه. مذكورة هنا صراحةً حتى لا يظن قارئ الكود أن الزراعة اختفت.
+   */
+  seed?: ((db: OfflineDb) => void | Promise<unknown>) | null;
+}
+
+const DEFAULT_MOUNT: Record<string, boolean> = {
+  master: true,
+  transactions: true,
+  reports: true,
+  admin: true,
+  changeRequests: true,
+};
+
+/** البادئة النشطة — تُستهلك في lib/api.ts */
+export let activeApiPrefix = '';
+
+/**
+ * إعدادات الموقع المسجَّلة — تُستخدم عندما يطلب أحدهم البيانات قبل أن
+ * يبدأ الموقع تهيئته (مثل شاشة الدخول التي تجلب الحسابات التجريبية).
+ * بلا هذا التسجيل، أول طلب في موقع المشتريات كان سيفتح قاعدة النظام
+ * الكامل بصمت — وهو بالضبط ما نبني هذا الملف لمنعه.
+ */
+let registeredConfig: EngineConfig | null = null;
+
+export function registerEngineConfig(cfg: EngineConfig) {
+  registeredConfig = cfg;
+}
+
+export function getRegisteredConfig(): EngineConfig {
+  return registeredConfig || {};
+}
+
+export function setActiveApiPrefix(prefix: string) {
+  activeApiPrefix = prefix || '';
+}
 
 /** الواجهة التي تعرضها حزمة الخادم بعد التحميل */
 interface ServerBundle {
@@ -80,9 +141,28 @@ function loadServerBundle(): ServerBundle {
  * يهيّئ النظام الأوفلاين بالكامل. آمن للاستدعاء أكثر من مرة:
  * التهيئة تحدث مرة واحدة فقط ويُعاد نفس الوعد بعدها.
  */
-export async function initOfflineEngine(): Promise<OfflineEngineState> {
+export async function initOfflineEngine(config?: EngineConfig): Promise<OfflineEngineState> {
   if (state) return state;
   if (initPromise) return initPromise;
+
+  // ─ لماذا لا توجد قيمة افتراضية في التوقيع؟ ────────────────────────────
+  // لأن `config = {}` تُحسب وقت تعريف الدالة، فتتجاوز أي وسيط صريح قيمته
+  // undefined. المشكلة الحقيقية أن **كل** مستدعٍ بلا إعدادات كان سيحصل
+  // على محرك بلا عزل — أي أن أي موقع جديد ينسى تمرير الإعدادات يفتح
+  // قاعدة النظام الكامل ويعدّلها. الخطأ الصريح أأمن من الافتراض الصامت.
+  if (!config || typeof config !== 'object') {
+    throw new Error(
+      'تهيئة محرك البيانات تحتاج إعدادات صريحة (الكائن قد يكون فارغاً: {}). ' +
+        'بلا إعدادات لا نعرف أي قاعدة نفتح — والافتراض الخاطئ يعني الكتابة فوق بيانات موقع آخر.'
+    );
+  }
+
+  // يجب أن تُضبط قبل أول فتح للقاعدة — لأن اسم التخزين يُحسب عند الفتح.
+  setDbNamespace(config.namespace || '');
+  setLockScope(config.namespace || '');
+  setActiveApiPrefix(config.apiPrefix || '');
+  const mountConfig = { ...DEFAULT_MOUNT, ...(config.mount || {}) };
+  const label = config.label || 'plus';
 
   // سقف زمني للتهيئة كلها.
   //
@@ -129,9 +209,9 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
     }
 
     // ── ج) قاعدة البيانات: تُبنى من المخطط الأصلي وتُزرع ببيانات الخادم ──
-    const { db, isNew } = await createOfflineDb(SCHEMA_SQL, (freshDb) => {
-      server.seedDatabase(freshDb);
-    });
+    const seedFn =
+      config.seed === null ? undefined : config.seed ?? ((freshDb: OfflineDb) => server.seedDatabase(freshDb));
+    const { db, isNew } = await createOfflineDb(SCHEMA_SQL, seedFn);
 
     // ── د) قفل الكتابة: تبويب واحد فقط يكتب ──────────────────────
     // بدونه يحفظ تبويبان صورتهما الكاملة للقاعدة فوق بعضهما فيضيع عمل أحدهما.
@@ -155,10 +235,12 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
       expressStub.__setPrefix(prefix);
       factory(db, authenticate);
     };
-    mount('/api/master', server.createMasterRouter);
-    mount('/api/transactions', server.createTransactionsRouter);
-    mount('/api/reports', server.createReportsRouter);
-    mount('/api/admin', server.createAdminRouter);
+    if (mountConfig.master) mount('/api/master', server.createMasterRouter);
+    if (mountConfig.transactions) mount('/api/transactions', server.createTransactionsRouter);
+    if (mountConfig.reports) mount('/api/reports', server.createReportsRouter);
+    // وحدة إدارة المستخدمين والنسخ الاحتياطي الكامل لا تُركَّب في موقع
+    // المشتريات: تعرض بيانات كل الشركة، ومستخدم المشتريات لا يحتاجها.
+    if (mountConfig.admin) mount('/api/admin', server.createAdminRouter);
 
     // طلبات التعديل على البيانات الرئيسية — (ج) تعديلات بموافقة المدير.
     //
@@ -176,11 +258,13 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
       }
       next();
     };
-    expressStub.__setPrefix('/api/change-requests');
-    server.createChangeRequestRouter(db, authenticate, {
-      requirePermission: (auth as Record<string, unknown>).requirePermission,
-      requireSuperAdmin,
-    });
+    if (mountConfig.changeRequests) {
+      expressStub.__setPrefix('/api/change-requests');
+      server.createChangeRequestRouter(db, authenticate, {
+        requirePermission: (auth as Record<string, unknown>).requirePermission,
+        requireSuperAdmin,
+      });
+    }
 
     mounted.push(...registry);
     const routes = mounted.reduce((sum, r) => sum + r.routes.length, 0);
@@ -201,7 +285,7 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
 
     if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
       console.info(
-        `[Plus Offline] ${state.meta.tables} جدول · ${routes} مسار · ${Math.round(
+        `[Plus Offline:${label}] ${state.meta.tables} جدول · ${routes} مسار · ${Math.round(
           performance.now() - started
         )}ms${isNew ? ' (بنية جديدة)' : ' (بيانات محفوظة)'}`
       );
@@ -253,7 +337,9 @@ export async function offlineStorageBytes() {
  * يعمل حتى لو لم تكن هناك تهيئة بعد — نطلبها أولاً لضمان وجود قاعدة.
  */
 export async function exportSqliteFile(): Promise<Uint8Array> {
-  const st = state ?? (await initOfflineEngine());
+  // نستخدم الإعدادات المسجَّلة: لو استُدعيت من موقع المشتريات قبل تهيئته،
+  // يجب أن تصدّر قاعدة المشتريات لا قاعدة النظام الكامل.
+  const st = state ?? (await initOfflineEngine(getRegisteredConfig()));
   // حفظ أي تغييرات معلّقة قبل التصدير حتى لا تخرج نسخة ناقصة
   await st.db.persist();
   return st.db.exportFile();
@@ -280,7 +366,9 @@ function currentTableNames(): string[] {
 export async function previewSqliteFile(
   bytes: Uint8Array
 ): Promise<{ info: SqliteFileInfo; problem: string | null }> {
-  const st = state ?? (await initOfflineEngine());
+  // نستخدم الإعدادات المسجَّلة: لو استُدعيت من موقع المشتريات قبل تهيئته،
+  // يجب أن تصدّر قاعدة المشتريات لا قاعدة النظام الكامل.
+  const st = state ?? (await initOfflineEngine(getRegisteredConfig()));
   await st.db.persist();
 
   const sql = await loadSqlJs();
@@ -301,7 +389,9 @@ export async function previewSqliteFile(
 export async function restoreSqliteFile(
   bytes: Uint8Array
 ): Promise<{ tables: number; rows: number }> {
-  const st = state ?? (await initOfflineEngine());
+  // نستخدم الإعدادات المسجَّلة: لو استُدعيت من موقع المشتريات قبل تهيئته،
+  // يجب أن تصدّر قاعدة المشتريات لا قاعدة النظام الكامل.
+  const st = state ?? (await initOfflineEngine(getRegisteredConfig()));
 
   const sql = await loadSqlJs();
   const info = inspectSqliteFile(

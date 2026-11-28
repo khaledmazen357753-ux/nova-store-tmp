@@ -42,7 +42,7 @@ const check=(n,ok,d='')=>{console.log(`  ${ok?'✅':'❌'} ${n}${d?` — ${d}`:'
 // ── 1) المستخدم يفتح النظام (قاعدة جديدة) ويعمل دورة محاسبية ──
 const eng = await load('offline/engine.js');
 const br  = await load('offline/bridge.js');
-const st = await eng.initOfflineEngine();
+const st = await eng.initOfflineEngine({});
 const call = (m,p,b,t) => br.dispatch(st.routers, m, p, { headers: t?{authorization:`Bearer ${t}`}:{}, body: b||{} });
 const tok = (await call('POST','/api/auth/login',{username:'accountant',password:'plus123',portal:'ERP'})).body.token;
 
@@ -79,7 +79,7 @@ console.log('قبل الترقية مباشرة:', JSON.stringify(snapshotBefore
 // ── 2) محاكاة إعادة تحميل الصفحة بعد نشر إصدار جديد ──
 await load('offline/db.js').then(m=>m.resetSqlJsCache());
 const eng2 = await load('offline/engine.js', '?r=2');
-const st2 = await eng2.initOfflineEngine();
+const st2 = await eng2.initOfflineEngine({});
 const br2 = await load('offline/bridge.js');
 
 check('القاعدة عُرفت كموجودة', st2.db.sqlite.exec("SELECT name FROM sqlite_master WHERE name='change_requests'")[0] !== undefined ? true : false);

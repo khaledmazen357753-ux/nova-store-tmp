@@ -63,7 +63,7 @@ async function main() {
   let state = null, bootErr = null;
   try {
     const engine = await load('offline/engine.js');
-    state = await engine.initOfflineEngine();
+    state = await engine.initOfflineEngine({});
   } catch (e) { bootErr = e; }
 
   check('النظام يبدأ بلا أي واجهة Node', Boolean(state), bootErr ? bootErr.message.slice(0, 70) : '');

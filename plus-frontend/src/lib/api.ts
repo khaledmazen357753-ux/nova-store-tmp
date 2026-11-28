@@ -14,23 +14,43 @@
  */
 
 import { dispatch as offlineDispatch } from '../offline/bridge';
-import { offlineState, initOfflineEngine, canWrite } from '../offline/engine';
+import { offlineState, initOfflineEngine, canWrite, activeApiPrefix, getRegisteredConfig } from '../offline/engine';
+
+/**
+ * إعداد طبقة الاتصال — يسمح لموقع ثانٍ يعمل على نفس الأصل (موقع
+ * المشتريات والمخازن والموردين) أن يستخدم قاعدة وجلسة **مستقلتين**.
+ *
+ * لماذا هذا ضروري؟ موقعان على نفس الدومين يتقاسمان localStorage. بلا فصل،
+ * تسجيل الدخول في موقع المشتريات يكتب توكن مدير النظام في مكان يقرأه
+ * النظام الكامل، فيصبح بإمكان مستخدم المشتريات فتح النظام الكامل بنفس
+ * الجلسة. الفصل هنا شرط أمني، لا تجميلي.
+ *
+ * الافتراضيات الفارغة تُبقي سلوك النظام الكامل كما هو بالحرف.
+ */
+let keySuffix = '';
+
+export function configureApi(options: { namespace?: string } = {}) {
+  keySuffix = options.namespace ? `_${options.namespace}` : '';
+}
 
 const CUSTOM_API_KEY = 'plus_custom_api_base_url';
 const TOKEN_KEY = 'plus_erp_auth_token';
 const MODE_KEY = 'plus_erp_data_mode'; // 'offline' | 'cloud'
 
+const tokenKey = () => `${TOKEN_KEY}${keySuffix}`;
+const modeKey = () => `${MODE_KEY}${keySuffix}`;
+
 export type DataMode = 'offline' | 'cloud';
 
 export function getDataMode(): DataMode {
-  const stored = localStorage.getItem(MODE_KEY);
+  const stored = localStorage.getItem(modeKey());
   if (stored === 'cloud' || stored === 'offline') return stored;
   // الافتراضي: أوفلاين — لأن أهم متطلب أن يعمل النظام بلا إنترنت
   return 'offline';
 }
 
 export function setDataMode(mode: DataMode) {
-  localStorage.setItem(MODE_KEY, mode);
+  localStorage.setItem(modeKey(), mode);
 }
 
 export function getApiBaseUrl(): string {
@@ -48,12 +68,12 @@ export function setCustomApiBaseUrl(url: string | null) {
 }
 
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(tokenKey());
 }
 
 export function setStoredToken(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  if (token) localStorage.setItem(tokenKey(), token);
+  else localStorage.removeItem(tokenKey());
 }
 
 export interface ApiError extends Error {
@@ -69,6 +89,12 @@ function makeError(message: string, code?: string, status?: number): ApiError {
 }
 
 export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  // موقع المشتريات يستدعي '/procurement/api/...' — نحذف البادئة لنصل
+  // لنفس المسارات التي يعرّفها كود الخادم بالحرف، بلا نسخة ثانية منها.
+  const prefix = activeApiPrefix;
+  const cleanPath =
+    prefix && (path === prefix || path.startsWith(`${prefix}/`)) ? path.slice(prefix.length) || '/' : path;
+
   const token = getStoredToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -80,7 +106,7 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
 
   // ═══════════ الوضع السحابي (اختياري) ═══════════════════════════
   if (getDataMode() === 'cloud') {
-    const res = await fetch(`${getApiBaseUrl()}${path}`, { ...options, headers });
+    const res = await fetch(`${getApiBaseUrl()}${cleanPath}`, { ...options, headers });
 
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
@@ -99,7 +125,7 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
 
   // ═══════════ الوضع الأوفلاين (الافتراضي) ═══════════════════════
   // ننتظر التهيئة إن لم تكن تمت بعد — أول طلب يفتح قاعدة البيانات المحلية
-  const engineState = offlineState() || (await initOfflineEngine());
+  const engineState = offlineState() || (await initOfflineEngine(getRegisteredConfig()));
 
   // تبويب للعرض فقط: نرفض الكتابة قبل وصولها للمحرك.
   // (تبويبان يكتبان في نفس القاعدة المحلية يحفظ كلٌّ منهما صورته فوق الأخرى.)
@@ -118,7 +144,7 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
         ? JSON.parse(options.body)
         : (options.body as unknown as Record<string, unknown>);
 
-  const result = await offlineDispatch(engineState.routers, method, path, { headers, body });
+  const result = await offlineDispatch(engineState.routers, method, cleanPath, { headers, body });
 
   // حفظ غير متزامن بعد كل تعديل ناجح
   if (method !== 'GET' && result.status < 400) {

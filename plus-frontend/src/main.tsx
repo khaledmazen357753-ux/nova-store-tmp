@@ -88,7 +88,7 @@ async function boot() {
     // شاشة افتتاحية بسيطة أثناء تحميل محرك الحسابات (أول فتحة فقط ~200ms)
     root.innerHTML = BOOT_HTML;
     try {
-      await initOfflineEngine();
+      await initOfflineEngine({});
     } catch (err) {
       // لا نكمل كأن شيئاً لم يكن. سابقاً كان الخطأ يُطبع في الـ console فقط
       // فيظهر المستخدم أمام شاشة دخول لا تعمل، بلا سبب مفهوم. الأفضل أن

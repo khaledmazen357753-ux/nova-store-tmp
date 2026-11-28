@@ -50,7 +50,7 @@ async function main() {
   const engine = await load('offline/engine.js');
   const bridge = await load('offline/bridge.js');
 
-  const state = await engine.initOfflineEngine();
+  const state = await engine.initOfflineEngine({});
   const call = async (method, p, body, token) =>
     bridge.dispatch(state.routers, method, p, {
       headers: token ? { authorization: `Bearer ${token}` } : {},
@@ -238,7 +238,7 @@ async function main() {
   console.log('\n── الثبات ──');
   await engine.persistNow();
   const engine2 = await load('offline/engine.js');
-  const state2 = await engine2.initOfflineEngine();
+  const state2 = await engine2.initOfflineEngine({});
   const bridge2 = await load('offline/bridge.js');
   const adminTok2 = (await bridge2.dispatch(state2.routers, 'POST', '/api/auth/login', { headers: {}, body: { username: 'admin', password: 'admin123', portal: 'ERP' } })).body?.token;
   const list2 = await bridge2.dispatch(state2.routers, 'GET', '/api/change-requests?status=approved', { headers: { authorization: `Bearer ${adminTok2}` }, body: {} });

@@ -83,7 +83,7 @@ async function main() {
 
   // ── 1) التهيئة ─────────────────────────────────────────────
   const t0 = Date.now();
-  const st = await engineMod.initOfflineEngine();
+  const st = await engineMod.initOfflineEngine({});
   const bootMs = Date.now() - t0;
 
   check('الوضع الافتراضي أوفلاين', api.getDataMode() === 'offline');
@@ -230,7 +230,7 @@ async function main() {
   // النسخة الثانية: وحدات جديدة كلياً، نفس قاعدة IndexedDB
   const engineFresh = await import(pathToFileURL(path.join(TMP2, 'offline/engine.js')).href);
   const apiFresh = await import(pathToFileURL(path.join(TMP2, 'lib/api.js')).href);
-  const st2 = await engineFresh.initOfflineEngine();
+  const st2 = await engineFresh.initOfflineEngine({});
   check('لم تُفقد البيانات بعد إعادة التحميل', st2.meta.isNew === false);
   check(
     'المستخدمون محفوظون بعد إعادة التحميل',
@@ -343,7 +343,7 @@ async function main() {
 
   const readerEngine = await import(pathToFileURL(path.join(TMP3, 'offline/engine.js')).href);
   const readerApi = await import(pathToFileURL(path.join(TMP3, 'lib/api.js')).href);
-  await readerEngine.initOfflineEngine();
+  await readerEngine.initOfflineEngine({});
 
   const readerIsWriter = readerEngine.canWrite();
 

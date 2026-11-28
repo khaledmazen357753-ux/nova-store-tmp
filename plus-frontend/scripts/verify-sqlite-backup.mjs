@@ -39,7 +39,7 @@ const check = (n, ok, d='') => { console.log(`  ${ok?'✅':'❌'} ${n}${d?` — 
 
 // ── تهيئة النظام الحقيقي ──────────────────────────────────────
 const t0 = Date.now();
-const st = await engMod.initOfflineEngine();
+const st = await engMod.initOfflineEngine({});
 const tables = st.db.sqlite.exec("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")[0].values[0][0];
 console.log(`النظام جاهز: ${tables} جدولاً · ${st.meta.routes} مساراً · ${Date.now()-t0}ms\n`);
 
@@ -84,7 +84,7 @@ check('الاستعادة تنجح', restored.tables === tables, `${restored.tab
 
 // إعادة التهيئة وقراءة الحالة
 await dbMod.resetSqlJsCache();
-const st2 = await engMod.initOfflineEngine();
+const st2 = await engMod.initOfflineEngine({});
 const itemsAfter = st2.db.sqlite.exec('SELECT COUNT(*) FROM items')[0].values[0][0];
 check('الصنف المضاف اختفى بعد الاستعادة', itemsAfter === before.items, `${afterAdd} → ${itemsAfter}`);
 
