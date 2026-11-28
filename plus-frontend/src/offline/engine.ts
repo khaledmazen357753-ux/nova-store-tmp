@@ -30,6 +30,11 @@ interface ServerBundle {
   createTransactionsRouter(db: OfflineDb, authenticate: unknown): unknown;
   createReportsRouter(db: OfflineDb, authenticate: unknown): unknown;
   createAdminRouter(db: OfflineDb, authenticate: unknown): unknown;
+  createChangeRequestRouter(
+    db: OfflineDb,
+    authenticate: unknown,
+    deps: { requirePermission: unknown; requireSuperAdmin: unknown }
+  ): unknown;
   auth: Record<string, unknown>;
 }
 
@@ -154,6 +159,28 @@ export async function initOfflineEngine(): Promise<OfflineEngineState> {
     mount('/api/transactions', server.createTransactionsRouter);
     mount('/api/reports', server.createReportsRouter);
     mount('/api/admin', server.createAdminRouter);
+
+    // طلبات التعديل على البيانات الرئيسية — (ج) تعديلات بموافقة المدير.
+    //
+    // نفس تعريف requireSuperAdmin المستخدم في admin.js بالحرف: الوحيدة
+    // الفارق أن هذا يعيد توجيه رسالة عربية خاصة بالطلبات بدل الرسالة
+    // العامة. الأثر الأمني متطابق، والوحدة نفسها مُحزَّمة من كود الخادم
+    // دون أي تعديل.
+    const requireSuperAdmin = (rq: unknown, rs: unknown, next: () => void) => {
+      const user = (rq as { user?: { role_code?: string } }).user;
+      if (!user || user.role_code !== 'SUPER_ADMIN') {
+        (rs as { status: (c: number) => { json: (b: unknown) => void } })
+          .status(403)
+          .json({ error: 'اعتماد أو رفض طلبات التعديل يقتصر على مدير النظام الأعلى (SUPER_ADMIN).' });
+        return;
+      }
+      next();
+    };
+    expressStub.__setPrefix('/api/change-requests');
+    server.createChangeRequestRouter(db, authenticate, {
+      requirePermission: (auth as Record<string, unknown>).requirePermission,
+      requireSuperAdmin,
+    });
 
     mounted.push(...registry);
     const routes = mounted.reduce((sum, r) => sum + r.routes.length, 0);

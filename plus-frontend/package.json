@@ -10,11 +10,12 @@
     "dev": "npm run prepare:engine && npm run prepare:wasm && vite --host 0.0.0.0 --port 3001",
     "build": "npm run prepare:engine && npm run prepare:wasm && tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 3001",
-    "verify:offline": "node scripts/verify-offline.mjs && node scripts/verify-sw.mjs && node scripts/verify-login.mjs && node scripts/verify-browser-apis.mjs && node scripts/verify-sqlite-backup.mjs",
+    "verify:offline": "node scripts/verify-offline.mjs && node scripts/verify-sw.mjs && node scripts/verify-login.mjs && node scripts/verify-browser-apis.mjs && node scripts/verify-sqlite-backup.mjs && node scripts/verify-change-requests.mjs",
     "verify:sw": "node scripts/verify-sw.mjs",
     "verify:login": "node scripts/verify-login.mjs",
     "verify:apis": "node scripts/verify-browser-apis.mjs",
-    "verify:sqlite": "node scripts/verify-sqlite-backup.mjs"
+    "verify:sqlite": "node scripts/verify-sqlite-backup.mjs",
+    "verify:changes": "node scripts/verify-change-requests.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",

@@ -2,9 +2,64 @@ const express = require('express');
 const { requirePermission, logAudit } = require('../auth');
 const { computeReorderPoint, round2, runInTransaction } = require('../accountingEngine');
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  تعديلات البيانات الرئيسية تمرّ بطلب مراجعة — لا تُكتب مباشرة
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * كان كل PUT في هذا الملف يكتب مباشرة. المشكلة الحقيقية في ذلك:
+ * تعديل سعر تكلفة صنف يغيّر تقييم المخزون وتقارير الربحية **بأثر رجعي**،
+ * ورفع حدّ ائتمان عميل يفتح له مبيعات لم يكن مؤهلاً لها، وتعديل اسم المنشأة
+ * يغيّر كل مستند يُطبع بعدها. ولا شيء من هذا يُنتج قيداً محاسبياً — فلا يظهر
+ * في ميزان المراجعة ولا في أي تقرير. يحدث صامتاً.
+ *
+ * الحل المطبَّق (قرار المستخدم: «تعديلات بموافقة المدير»):
+ *   • التعديل يُسجَّل كطلب في change_requests عبر /api/change-requests
+ *   • مدير النظام (SUPER_ADMIN) يعتمده أو يرفضه بسبب
+ *   • لا يُلمس الجدول الأصلي إلا لحظة الاعتماد
+ *
+ * ─ لماذا نمنع PUT هنا ولو كانت الواجهة لا تستدعيه؟ ──────────────────
+ *
+ * لأن الحماية في الواجهة ليست حماية. أي عميل HTTP يمكنه إرسال PUT مباشرة
+ * ويتجاوز كل شيء. الاختبار يثبت أن الرفض يحدث على الخادم.
+ *
+ * ─ لماذا SUPER_ADMIN مسموح له بالكتابة المباشرة؟ ────────────────────
+ *
+ * لأن اعتماد الطلب يطبّق نفس الـ UPDATE بالحرف. لو منعناه، لصار "الاعتماد"
+ * طقساً بلا معنى — هو من يقرّر، والقرار يُسجَّل في التدقيق إما من هنا أو
+ * من هناك. المنع الحقيقي موجَّه لمن يحتاج موافقة، وهو البقية.
+ */
+
+
 module.exports = function createMasterRouter(db, authenticate) {
   const router = express.Router();
   router.use(authenticate);
+  function requireChangeRequest(entityLabel) {
+    return function blockDirectEdit(req, res, next) {
+      // مدير النظام الأعلى يعدّل مباشرة — قراره هو الموافقة نفسها
+      if (req.user && req.user.role_code === 'SUPER_ADMIN') {
+        if (req.user && typeof logAudit === 'function') {
+          logAudit(db, {
+            username: req.user.username,
+            user_role: req.user.role_code,
+            module: 'البيانات الأساسية',
+            action: `تعديل مباشر (مدير النظام) — ${entityLabel}`,
+            entity_id: String(req.params.code || req.params.id || ''),
+            details: 'تعديل تجاوز طلب المراجعة بصلاحية مدير النظام الأعلى',
+          });
+        }
+        return next();
+      }
+      return res.status(403).json({
+        error:
+          `تعديل ${entityLabel} يمرّ بطلب مراجعة. قدّم طلب تعديل وسيراجعه مدير النظام — ` +
+          'لأن هذا التغيير يؤثر في التقارير والمستندات اللاحقة دون أن يُنتج قيداً محاسبياً.',
+        code: 'CHANGE_REQUEST_REQUIRED',
+        submit_to: 'POST /api/change-requests',
+      });
+    };
+  }
+
 
   // 1. بيانات الشركة
   router.get('/company', (_req, res) => {
@@ -12,7 +67,7 @@ module.exports = function createMasterRouter(db, authenticate) {
     res.json({ company });
   });
 
-  router.put('/company', requirePermission('master', 'edit'), (req, res) => {
+  router.put('/company', requirePermission('master', 'edit'), requireChangeRequest('بيانات المنشأة'), (req, res) => {
     const { company_name, commercial_reg, tax_number, address, city, phone, email, currency, fiscal_year } = req.body || {};
     db.prepare(`
       UPDATE company_settings
@@ -61,7 +116,7 @@ module.exports = function createMasterRouter(db, authenticate) {
     }
   });
 
-  router.put('/departments/:code', requirePermission('master', 'edit'), (req, res) => {
+  router.put('/departments/:code', requirePermission('master', 'edit'), requireChangeRequest('بيانات الإدارة'), (req, res) => {
     const { dept_name, manager_name = '', description = '' } = req.body || {};
     db.prepare(`UPDATE departments SET dept_name = ?, manager_name = ?, description = ? WHERE dept_code = ?`)
       .run(dept_name, manager_name, description, req.params.code);
@@ -242,7 +297,7 @@ module.exports = function createMasterRouter(db, authenticate) {
     }
   });
 
-  router.put('/items/:code', requirePermission('master', 'edit'), (req, res) => {
+  router.put('/items/:code', requirePermission('master', 'edit'), requireChangeRequest('بيانات الصنف'), (req, res) => {
     const {
       item_name,
       group_code,
@@ -317,7 +372,7 @@ module.exports = function createMasterRouter(db, authenticate) {
     }
   });
 
-  router.put('/customers/:id', requirePermission('master', 'edit'), (req, res) => {
+  router.put('/customers/:id', requirePermission('master', 'edit'), requireChangeRequest('بيانات العميل'), (req, res) => {
     const { customer_name, address, city, phone, email, credit_limit } = req.body || {};
     db.prepare(`
       UPDATE customers
@@ -363,7 +418,7 @@ module.exports = function createMasterRouter(db, authenticate) {
     }
   });
 
-  router.put('/suppliers/:id', requirePermission('master', 'edit'), (req, res) => {
+  router.put('/suppliers/:id', requirePermission('master', 'edit'), requireChangeRequest('بيانات المورّد'), (req, res) => {
     const { supplier_name, address, city, phone, email } = req.body || {};
     db.prepare(`
       UPDATE suppliers
@@ -416,7 +471,7 @@ module.exports = function createMasterRouter(db, authenticate) {
     }
   });
 
-  router.put('/employees/:code', requirePermission('master', 'edit'), (req, res) => {
+  router.put('/employees/:code', requirePermission('master', 'edit'), requireChangeRequest('بيانات الموظف'), (req, res) => {
     const {
       employee_name, job_title, dept_code, specialization, qualification,
       marital_status, basic_salary, housing_allowance, transport_allowance, meal_allowance, other_allowances, status,

@@ -2,13 +2,71 @@ import React, { useEffect, useState } from 'react';
 import { Building2, Layers, Users, UserCheck, Truck, Package, Landmark, Plus, Save } from 'lucide-react';
 import { apiFetch, fmtMoney, fmtNum } from '../lib/api';
 import { PlusSpinner } from '../components/BrandIdentity';
+import { EditRequestDialog, type EditableField } from '../components/EditRequestDialog';
 
 type MasterTab = 'company' | 'departments' | 'employees' | 'customers' | 'suppliers' | 'items' | 'banks';
+
+/**
+ * الحقول القابلة لطلب التعديل — مطابقة حرفياً لقائمة الخادم في
+ * `plus-backend/src/changeRequests.js`. أي اختلاف يعني حقلاً يُعرض ولا يُقبل،
+ * أو حقلاً يُقبل ولا يُعرض. الاختبار يتحقق من التطابق.
+ */
+const EDITABLE_FIELDS: Record<string, EditableField[]> = {
+  items: [
+    { key: 'item_name', label: 'اسم الصنف' },
+    { key: 'group_code', label: 'كود المجموعة' },
+    { key: 'item_type', label: 'نوع الصنف' },
+    { key: 'unit_of_measure', label: 'وحدة القياس' },
+    { key: 'cost_price', label: 'سعر التكلفة', type: 'number' },
+    { key: 'unit_price', label: 'سعر البيع', type: 'number' },
+    { key: 'annual_demand', label: 'الطلب السنوي', type: 'number' },
+    { key: 'safety_stock', label: 'مخزون الأمان', type: 'number' },
+    { key: 'lead_time_days', label: 'مدة التوريد (يوم)', type: 'number' },
+    { key: 'reorder_point', label: 'حد إعادة الطلب', type: 'number' },
+    { key: 'eoq', label: 'الكمية الاقتصادية (EOQ)', type: 'number' },
+  ],
+  customers: [
+    { key: 'customer_name', label: 'اسم العميل' },
+    { key: 'phone', label: 'الهاتف' },
+    { key: 'email', label: 'البريد' },
+    { key: 'city', label: 'المدينة' },
+    { key: 'address', label: 'العنوان' },
+    { key: 'credit_limit', label: 'حد الائتمان', type: 'number' },
+  ],
+  suppliers: [
+    { key: 'supplier_name', label: 'اسم المورّد' },
+    { key: 'phone', label: 'الهاتف' },
+    { key: 'email', label: 'البريد' },
+    { key: 'city', label: 'المدينة' },
+    { key: 'address', label: 'العنوان' },
+  ],
+  employees: [
+    { key: 'employee_name', label: 'اسم الموظف' },
+    { key: 'job_title', label: 'المسمى الوظيفي' },
+    { key: 'dept_code', label: 'كود القسم' },
+    { key: 'specialization', label: 'التخصص' },
+    { key: 'qualification', label: 'المؤهل' },
+    { key: 'marital_status', label: 'الحالة الاجتماعية' },
+    { key: 'basic_salary', label: 'الراتب الأساسي', type: 'number' },
+    { key: 'housing_allowance', label: 'بدل السكن', type: 'number' },
+    { key: 'transport_allowance', label: 'بدل النقل', type: 'number' },
+    { key: 'meal_allowance', label: 'بدل الإعاشة', type: 'number' },
+    { key: 'other_allowances', label: 'بدلات أخرى', type: 'number' },
+  ],
+};
 
 export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = 'ج.م' }) => {
   const [tab, setTab] = useState<MasterTab>('items');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  // طلب تعديل مفتوح — كيان واحد في كل مرة
+  const [editRequest, setEditRequest] = useState<{
+    entityType: string;
+    entityId: string;
+    entityLabel: string;
+    current: Record<string, unknown>;
+  } | null>(null);
 
   const [company, setCompany] = useState<any>({});
   const [departments, setDepartments] = useState<any[]>([]);
@@ -311,6 +369,7 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                   <th className="py-2.5 px-2">EOQ</th>
                   <th className="py-2.5 px-2">الرصيد الحالي</th>
                   <th className="py-2.5 px-2">الحالة</th>
+                  <th className="py-2.5 px-2">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D4AF37]/10 tabular-nums">
@@ -336,6 +395,24 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                       >
                         {it.stock_status}
                       </span>
+                    </td>
+                    <td className="py-2.5 px-2">
+                      {/* أي تعديل على بيانات الصنف (خصوصاً التكلفة والسعر) يمرّ
+                          بطلب مراجعة — تعديل التكلفة يغيّر تقارير الربحية
+                          بأثر رجعي ولا يظهر في أي قيد محاسبي. */}
+                      <button
+                        onClick={() =>
+                          setEditRequest({
+                            entityType: 'items',
+                            entityId: it.item_code,
+                            entityLabel: `${it.item_code} — ${it.item_name}`,
+                            current: it as Record<string, unknown>,
+                          })
+                        }
+                        className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E5C158] cursor-pointer whitespace-nowrap transition-colors"
+                      >
+                        طلب تعديل
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -388,6 +465,7 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                   <th className="py-2 px-2">حد الائتمان</th>
                   <th className="py-2 px-2">الرصيد الصافي اللحظي</th>
                   <th className="py-2 px-2">الائتمان المتاح</th>
+                  <th className="py-2 px-2">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D4AF37]/10 tabular-nums">
@@ -399,6 +477,21 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                     <td className="py-2.5 px-2">{fmtMoney(c.credit_limit, currency)}</td>
                     <td className="py-2.5 px-2 font-bold text-amber-300">{fmtMoney(c.net_balance, currency)}</td>
                     <td className="py-2.5 px-2 text-emerald-300">{fmtMoney(c.available_credit, currency)}</td>
+                    <td className="py-2.5 px-2">
+                      <button
+                        onClick={() =>
+                          setEditRequest({
+                            entityType: 'customers',
+                            entityId: c.customer_id,
+                            entityLabel: `${c.customer_id} — ${c.customer_name}`,
+                            current: c as Record<string, unknown>,
+                          })
+                        }
+                        className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E5C158] cursor-pointer whitespace-nowrap transition-colors"
+                      >
+                        طلب تعديل
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -447,6 +540,7 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                   <th className="py-2 px-2">الهاتف</th>
                   <th className="py-2 px-2">البريد الإلكتروني</th>
                   <th className="py-2 px-2">الرصيد الصافي المستحق</th>
+                  <th className="py-2 px-2">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D4AF37]/10 tabular-nums">
@@ -458,6 +552,21 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                     <td className="py-2.5 px-2">{s.phone}</td>
                     <td className="py-2.5 px-2 text-[#B5AD99]">{s.email}</td>
                     <td className="py-2.5 px-2 font-bold text-amber-300">{fmtMoney(s.net_balance, currency)}</td>
+                    <td className="py-2.5 px-2">
+                      <button
+                        onClick={() =>
+                          setEditRequest({
+                            entityType: 'suppliers',
+                            entityId: s.supplier_id,
+                            entityLabel: `${s.supplier_id} — ${s.supplier_name}`,
+                            current: s as Record<string, unknown>,
+                          })
+                        }
+                        className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E5C158] cursor-pointer whitespace-nowrap transition-colors"
+                      >
+                        طلب تعديل
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -529,6 +638,7 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                   <th className="py-2 px-2">الراتب الأساسي</th>
                   <th className="py-2 px-2">مجموع البدلات</th>
                   <th className="py-2 px-2">إجمالي الحزمة الشهرية</th>
+                  <th className="py-2 px-2">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D4AF37]/10 tabular-nums">
@@ -541,6 +651,21 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
                     <td className="py-2.5 px-2">{fmtMoney(emp.basic_salary, currency)}</td>
                     <td className="py-2.5 px-2">{fmtMoney(emp.total_allowances, currency)}</td>
                     <td className="py-2.5 px-2 font-bold text-emerald-300">{fmtMoney(emp.gross_package, currency)}</td>
+                    <td className="py-2.5 px-2">
+                      <button
+                        onClick={() =>
+                          setEditRequest({
+                            entityType: 'employees',
+                            entityId: emp.employee_code,
+                            entityLabel: `${emp.employee_code} — ${emp.employee_name}`,
+                            current: emp as Record<string, unknown>,
+                          })
+                        }
+                        className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E5C158] cursor-pointer whitespace-nowrap transition-colors"
+                      >
+                        طلب تعديل
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -663,14 +788,17 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
       {/* 7. بيانات الشركة */}
       {tab === 'company' && (
         <form
-          onSubmit={async (e) => {
+          onSubmit={(e) => {
             e.preventDefault();
-            try {
-              await apiFetch('/api/master/company', { method: 'PUT', body: JSON.stringify(company) });
-              flash('ok', 'تم حفظ بيانات المنشأة بنجاح');
-            } catch (err: any) {
-              flash('err', err.message);
-            }
+            // بيانات المنشأة تمرّ بطلب مراجعة مثل بقية البيانات الرئيسية:
+            // اسم المنشأة والرقم الضريبي يظهران على كل تقرير ومستند، وتغييرهما
+            // بلا مراجعة يعني إصدار مستندات رسمية ببيانات غير معتمدة.
+            setEditRequest({
+              entityType: 'company_settings',
+              entityId: '1',
+              entityLabel: `بيانات المنشأة — ${company.company_name || ''}`,
+              current: company as Record<string, unknown>,
+            });
           }}
           className="royal-card rounded-2xl p-6 max-w-3xl space-y-4"
         >
@@ -706,10 +834,23 @@ export const MasterDataModule: React.FC<{ currency?: string }> = ({ currency = '
             </div>
           </div>
           <button type="submit" className="gold-metallic-btn px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 cursor-pointer">
-            <Save className="w-4 h-4" /> حفظ بيانات الشركة
+            <Save className="w-4 h-4" /> إرسال تعديل بيانات المنشأة للمراجعة
           </button>
         </form>
       )}
+      <EditRequestDialog
+        open={!!editRequest}
+        entityType={editRequest?.entityType || 'items'}
+        entityId={editRequest?.entityId || ''}
+        entityLabel={editRequest?.entityLabel || ''}
+        current={editRequest?.current || {}}
+        fields={EDITABLE_FIELDS[editRequest?.entityType || 'items'] || []}
+        onClose={() => setEditRequest(null)}
+        onSubmitted={(message) => {
+          flash('ok', message);
+          setEditRequest(null);
+        }}
+      />
     </div>
   );
 };

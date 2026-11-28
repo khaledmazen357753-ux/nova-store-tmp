@@ -10,6 +10,7 @@ const createMasterRouter = require('./routes/master');
 const createTransactionsRouter = require('./routes/transactions');
 const createReportsRouter = require('./routes/reports');
 const createAdminRouter = require('./routes/admin');
+const createChangeRequestRouter = require('./changeRequests');
 
 const PORT = Number(process.env.PORT || 4000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -100,6 +101,30 @@ app.use('/api/master', createMasterRouter(db, authenticate));
 app.use('/api/transactions', createTransactionsRouter(db, authenticate));
 app.use('/api/reports', createReportsRouter(db, authenticate));
 app.use('/api/admin', createAdminRouter(db, authenticate));
+
+// طلبات التعديل على البيانات الرئيسية — (ج) تعديلات بموافقة المدير.
+//
+// البيانات الرئيسية تُعدَّل عبر طلب يراجعه مدير النظام، لا مباشرة. السبب:
+// تعديل سعر تكلفة صنف أو حدّ ائتمان عميل يؤثر بأثر رجعي في كل تقرير لاحق،
+// ولا يُنتج قيداً محاسبياً — أي أنه يحدث صامتاً بلا أثر في ميزان المراجعة.
+//
+// requireSuperAdmin يُحقن من هنا لأن admin.js يحتفظ بنسخته الخاصة؛ نستخدم
+// نفس الشرط بالحرف حتى لا ينحرف تعريف "مدير" بين الوحدتين.
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.user || req.user.role_code !== 'SUPER_ADMIN') {
+    return res.status(403).json({
+      error: 'اعتماد أو رفض طلبات التعديل يقتصر على مدير النظام الأعلى (SUPER_ADMIN).',
+    });
+  }
+  next();
+};
+app.use(
+  '/api/change-requests',
+  createChangeRequestRouter(db, authenticate, {
+    requirePermission: require('./auth').requirePermission,
+    requireSuperAdmin,
+  })
+);
 
 app.use((err, _req, res, _next) => {
   console.error('Unhandled API error:', err);

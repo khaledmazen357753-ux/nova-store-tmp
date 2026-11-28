@@ -13,12 +13,14 @@ import {
   Menu,
   X,
   Shield,
+  ShieldCheck,
 } from 'lucide-react';
 import { apiFetch, getStoredToken, setStoredToken } from './lib/api';
 import { PlusBrandLockup, PlusCrossEmblem, PlusSpinner, PlusWatermark } from './components/BrandIdentity';
 import { LoginScreen } from './components/LoginScreen';
 import { DataModeBadge } from './components/DataModeBadge';
 import { OfflineSettings } from './components/OfflineSettings';
+import { ChangeRequests } from './components/ChangeRequests';
 import { ReadOnlyTabBanner } from './components/ReadOnlyTabBanner';
 import { DashboardModule, ModuleKey } from './modules/DashboardModule';
 import { MasterDataModule } from './modules/MasterDataModule';
@@ -49,6 +51,14 @@ export const App: React.FC = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // طلبات التعديل — (ج) تعديلات بموافقة المدير.
+  //
+  // العدّاد يُحمَّل مرة عند الدخول ثم عند فتح الشاشة. لا استقصاء دوري:
+  // طلبات التعديل ليست حرجة زمنياً، واستعلام كل ٣٠ ثانية في وضع الأوفلاين
+  // يعني مسحاً للقاعدة كل نصف دقيقة على جهاز المستخدم — تكلفة بلا مقابل.
+  const [changesOpen, setChangesOpen] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(0);
+
   useEffect(() => {
     const init = async () => {
       const minSplash = new Promise((r) => setTimeout(r, 850));
@@ -78,6 +88,25 @@ export const App: React.FC = () => {
     };
     init();
   }, []);
+
+  // عدّاد الطلبات المعلّقة — يُجلب بعد الدخول وعند كل فتح للشاشة.
+  // الفشل هنا لا يجب أن يمنع استخدام التطبيق: من لا يملك صلاحية الوصول
+  // لطلبات التعديل (أو خادم غير متاح) يرى العداد صفراً بلا رسالة خطأ.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await apiFetch<{ pending_count: number }>('/api/change-requests?status=pending');
+        if (!cancelled) setPendingChanges(res.pending_count || 0);
+      } catch {
+        if (!cancelled) setPendingChanges(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, changesOpen]);
 
   const handleModuleSwitch = (mod: ModuleKey) => {
     setMobileNavOpen(false);
@@ -174,6 +203,18 @@ export const App: React.FC = () => {
             </div>
           </div>
           <button
+            onClick={() => setChangesOpen(true)}
+            className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors relative"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>طلبات تعديل البيانات</span>
+            {pendingChanges > 0 && (
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-[#0B0B10] text-[10px] font-extrabold flex items-center justify-center">
+                {pendingChanges > 99 ? '99+' : pendingChanges}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setSettingsOpen(true)}
             className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-[#13131A] hover:bg-[#1A1A24] border border-[#D4AF37]/25 text-[#E2DAC6] flex items-center justify-center gap-2 cursor-pointer transition-colors"
           >
@@ -245,6 +286,7 @@ export const App: React.FC = () => {
       </div>
 
       <OfflineSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ChangeRequests open={changesOpen} onClose={() => setChangesOpen(false)} />
     </div>
   );
 };

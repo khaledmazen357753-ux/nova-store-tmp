@@ -87,13 +87,25 @@ async function main() {
   const bootMs = Date.now() - t0;
 
   check('الوضع الافتراضي أوفلاين', api.getDataMode() === 'offline');
-  check('المخطط كامل', st.meta.tables === 37, `${st.meta.tables} جدول`);
+  // نتحقق أن كل جدول في schema.sql وصل فعلاً إلى القاعدة — لا رقم ثابت.
+  // الرقم الثابت كان يفشل عند كل إضافة مشروعة (مثل جدول طلبات التعديل)
+  // فيوهم بعطل بدل أن يؤكد التغطية.
+  const schemaSqlText = readFileSync(
+    path.join(ROOT, '..', 'plus-backend', 'sql', 'schema.sql'),
+    'utf8'
+  );
+  const schemaTableCount = (schemaSqlText.match(/CREATE TABLE IF NOT EXISTS (\w+)/gi) || []).length;
+  check(
+    'المخطط كامل — كل جدول في schema.sql موجود',
+    st.meta.tables === schemaTableCount && schemaTableCount >= 37,
+    `${st.meta.tables} من ${schemaTableCount}`
+  );
   // رقم متوقع دقيق كان يفشل عند كل مسار جديد بلا معنى — نتحقق أن كل راوتر
   // مركّب فعلاً وأن المجموع يطابق مجموع مساراته (فلا مسار يسقط بصمت).
   const mountedTotal = st.routers.reduce((n, r) => n + r.routes.length, 0);
   check(
     'كل المسارات مركّبة',
-    st.meta.routes === mountedTotal && st.routers.length === 5,
+    st.meta.routes === mountedTotal && st.routers.length >= 5,
     `${st.meta.routes} مسار من ${st.routers.length} راوتر`
   );
   check('المحرك المحاسبي محمَّل', typeof st.engine.postJournalEntryRaw === 'function',
