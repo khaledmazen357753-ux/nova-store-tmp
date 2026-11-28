@@ -34,6 +34,7 @@ const REQUIRED = [
   'src/routes/transactions.js',
   'src/routes/reports.js',
   'src/routes/admin.js',
+  'src/changeRequests.js',
   'sql/schema.sql',
 ];
 
@@ -147,6 +148,7 @@ module.exports = {
   createTransactionsRouter: require('./routes/transactions.js'),
   createReportsRouter: require('./routes/reports.js'),
   createAdminRouter: require('./routes/admin.js'),
+  createChangeRequestRouter: require('./changeRequests.js'),
 };
 `;
 }

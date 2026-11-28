@@ -69,8 +69,20 @@ async function main() {
   check('النظام يبدأ بلا أي واجهة Node', Boolean(state), bootErr ? bootErr.message.slice(0, 70) : '');
   if (!state) { console.log(`\nالنتيجة: ${pass} نجح | ${fail} فشل`); process.exit(1); }
 
-  check('المخطط كامل', state.meta.tables === 37, `${state.meta.tables} جدول`);
-  check('الراوترات مركّبة', state.routers.length === 5, `${state.routers.length} راوتر`);
+  // نتحقق من التغطية لا من رقم ثابت: العدد الثابت يفشل عند كل جدول أو راوتر
+  // جديد مشروع، فيبدو كعطل بينما هو نمو.
+  const schemaSrc = readFileSync(path.join(ROOT, '..', 'plus-backend', 'sql', 'schema.sql'), 'utf8');
+  const schemaCount = (schemaSrc.match(/CREATE TABLE IF NOT EXISTS (\w+)/gi) || []).length;
+  check(
+    'المخطط كامل — كل جدول في schema.sql موجود',
+    state.meta.tables === schemaCount,
+    `${state.meta.tables} من ${schemaCount}`
+  );
+  check(
+    'كل الراوترات مركّبة بلا مسار ساقط',
+    state.routers.length >= 5 && state.meta.routes === state.routers.reduce((n, r) => n + r.routes.length, 0),
+    `${state.routers.length} راوتر · ${state.meta.routes} مسار`
+  );
 
   const api = await load('lib/api.js');
   api.setDataMode('offline');

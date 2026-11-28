@@ -526,3 +526,59 @@ CREATE INDEX IF NOT EXISTS idx_supplier_tx_supp ON supplier_transactions(supplie
 CREATE INDEX IF NOT EXISTS idx_item_movements_item ON item_movements(item_code);
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_date ON sales_invoices(invoice_date);
 CREATE INDEX IF NOT EXISTS idx_purchase_invoices_date ON purchase_invoices(invoice_date);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- طلبات التعديل على البيانات الرئيسية (Change Requests)
+-- ═══════════════════════════════════════════════════════════════════════════
+--
+-- الفكرة: البيانات الرئيسية (أسعار الأصناف، حدود الائتمان، بيانات العملاء
+-- والموردين والموظفين) ليست ملكاً لمن يعدّلها لحظة إدخالها — بل تؤثر في
+-- كل تقرير لاحق وفي كل فاتورة تُصدر. حين يعدّلها المحاسب مباشرةً تنشأ مشكلة
+-- حقيقية: تعديل سعر تكلفة صنف يغيّر تكلفة المخزون وتقارير الربحية تاريخياً،
+-- وقد يحدث بلا علم أحد.
+--
+-- لذلك لا تُكتب التعديلات هنا مباشرة. تُسجَّل كطلب (pending) بالمحتوى
+-- المقترح كاملاً كـ JSON، ويراجعه مدير النظام (SUPER_ADMIN) فيقبله أو يرفضه.
+-- لا يُلمس الجدول الأصلي إلا لحظة الاعتماد، وفي نفس المعاملة.
+--
+-- لماذا JSON بدل أعمدة مطابقة؟
+--   • طلبات التعديل تخص جداول مختلفة بأعمدة مختلفة؛ JSON يوحّدها بلا جدول
+--     لكل كيان.
+--   • المعاينة تحتاج "قبل/بعد" لكشف ما تغيّر فعلاً — وJSON يحفظ اللقطة.
+--   • لو تغيّر مخطط الجدول الأصلي لاحقاً، الطلبات القديمة تبقى مقروءة.
+--
+-- لماذا change_id نصي وليس AUTOINCREMENT؟
+--   • يُقرأ بصرياً في السجلات (CR-000012)، ولا يتغيّر لو أُعيدت تهيئة الجداول.
+--   • يُولَّد من المخطط بحيث يبقى فريداً عبر النسخ الاحتياطية والاستعادة.
+CREATE TABLE IF NOT EXISTS change_requests (
+    change_id TEXT PRIMARY KEY,
+    -- الجدول المستهدف: items / customers / suppliers / employees / company_settings
+    entity_type TEXT NOT NULL,
+    -- المفتاح الأساسي للصف المستهدف (item_code / customer_id / ...)
+    entity_id TEXT NOT NULL,
+    -- اسم مقروء للعرض: "ITM-101 — خادم Dell PowerEdge R750"
+    entity_label TEXT NOT NULL DEFAULT '',
+    -- القيم المقترحة كاملة — تُطبَّق كما هي عند الاعتماد
+    payload_json TEXT NOT NULL,
+    -- لقطة الصف قبل التعديل — تُستخدم في المعاينة (قبل/بعد) وفي التدقيق
+    before_json TEXT NOT NULL DEFAULT '{}',
+    -- سبب التعديل: إلزامي. طلب بلا سبب لا يمكن لمدير أن يحكم عليه.
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+    requested_by TEXT NOT NULL,
+    requested_by_name TEXT NOT NULL DEFAULT '',
+    requested_by_role TEXT NOT NULL DEFAULT '',
+    requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+    -- من راجعه ومتى ولماذا — إلزامي عند الرفض
+    reviewed_by TEXT,
+    reviewed_by_name TEXT,
+    reviewed_at TEXT,
+    review_note TEXT,
+    -- رقم القيد/العملية الناتجة إن وُجد — يربط الطلب بأثره
+    posted_ref TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_change_requests_status ON change_requests(status);
+CREATE INDEX IF NOT EXISTS idx_change_requests_entity ON change_requests(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_change_requests_requester ON change_requests(requested_by);
